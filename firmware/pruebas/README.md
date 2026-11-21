@@ -1,4 +1,4 @@
-# Diagnósticos individuales del hardware
+# Diagnósticos del hardware y la partida
 
 Programas de diagnóstico separados del firmware integrado. El equipo confirmó
 el funcionamiento manual de servo y reed en el prototipo de mesa; no se atribuye
@@ -29,6 +29,7 @@ usando `firmware/src` y su configuración no se modifica.
 ```powershell
 pio run -d firmware/pruebas -e servo
 pio run -d firmware/pruebas -e reed
+pio run -d firmware/pruebas -e distancia -e luz
 pio run -d firmware -e caja
 ```
 
@@ -114,3 +115,50 @@ todos los rebotes eléctricos; su impresión también consume tiempo.
 El equipo confirmó LOW con imán cerca y HIGH con imán lejos. No registró
 distancias ni mediciones instrumentales de antirrebote; el resumen Serial
 permite observar el comportamiento muestreado, con las limitaciones descritas.
+
+## P4: diagnósticos de distancia y luz
+
+Los entornos `distancia` y `luz` funcionan por separado y muestran datos por
+Serial a 115200 baudios.
+
+- **Distancia.** Alimentar el HC-SR04 a 5 V con GND común. Conectar TRIG a GPIO23
+  y ECHO a GPIO19 mediante el divisor, con 1 kΩ entre ECHO y GPIO19 y 2 kΩ entre
+  GPIO19 y GND. Comparar las lecturas con una regla a 10, 20 y 30 cm. Comprobar
+  también los avisos de falta de eco y de distancia fuera de 2–400 cm.
+- **Luz.** Conectar el punto medio del divisor de LDR y 10 kΩ a GPIO34. El
+  diagnóstico muestra el promedio de ocho lecturas ADC sin convertir a voltios,
+  el porcentaje y, al arrancar, la calibración provisional de 0 para oscuridad
+  y 4095 para luz intensa. Este ajuste supone que la lectura sube con la luz
+  (LDR hacia 3,3 V y resistencia hacia GND). Registrar las lecturas con la LDR
+  tapada, con luz ambiente y con una linterna. Después pasar los valores medidos
+  de oscuridad y luz intensa a `configurarCalibracion()`, en ese orden, aunque
+  el ADC disminuya al iluminar.
+
+## P4: partida completa sin red
+
+El entorno `desafios` ejecuta la partida con los cuatro pulsadores, los LEDs,
+el HC-SR04, la LDR y el SG90. Arranca en modo juego, con dificultad normal:
+4 colores, 20 ± 4 cm durante 2 s y al menos 70 % de luz durante 1 s. El umbral
+de luz y la calibración ADC son provisionales.
+
+Desde la raíz del repositorio, compilar y, durante el montaje, cargar y abrir
+el monitor a 115200 baudios:
+
+```powershell
+pio run -d firmware/pruebas -e desafios
+pio run -d firmware/pruebas -e desafios -t upload
+pio device monitor -d firmware/pruebas -e desafios
+```
+
+`CerraduraServo::iniciar()` activa el PWM y ordena cerrar al arrancar. Para la
+primera prueba, revisar la alimentación de 5 V y el GND común, y dejar el
+SG90 sin carga ni acoplado al pestillo hasta calibrar su recorrido.
+
+1. Esperar el mensaje de diagnóstico preparado y pulsar inicio (GPIO17).
+2. Repetir la secuencia con los tres pulsadores de colores. Probar un error
+   para observar el reintento de memoria y, luego, completar la secuencia.
+3. Mantener la mano en el rango indicado. El LED verde señala que la lectura
+   está dentro del rango. Luego, iluminar la LDR hasta superar el desafío de luz.
+4. Comprobar por separado los mensajes de apertura y de partida completada,
+   y verificar el movimiento del servo. Otra pulsación de inicio ordena
+   cerrar y comienza una partida nueva, incluso si la anterior seguía en curso.
