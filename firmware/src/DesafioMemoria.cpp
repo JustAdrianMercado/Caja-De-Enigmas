@@ -98,12 +98,12 @@ void DesafioMemoria::actualizarRespuesta() {
 }
 
 void DesafioMemoria::esperarLiberacion() {
-    bool hayPulsadorPresionado = false;
+    bool estanLiberados = true;
     for (Pulsador* pulsador : pulsadores_) {
         pulsador->fuePulsado();
-        hayPulsadorPresionado = hayPulsadorPresionado || pulsador->estaPulsado();
+        estanLiberados = estanLiberados && pulsador->estaLiberado();
     }
-    if (!hayPulsadorPresionado) {
+    if (estanLiberados) {
         estado_ = Estado::RecibiendoRespuesta;
     }
 }

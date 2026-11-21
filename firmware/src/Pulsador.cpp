@@ -36,6 +36,10 @@ bool Pulsador::estaPulsado() const {
     return estaPulsado_;
 }
 
+bool Pulsador::estaLiberado() const {
+    return !estaPulsado_ && !ultimaLecturaPulsada_;
+}
+
 bool Pulsador::fuePulsado() {
     const bool huboPulsacion = hayPulsacionPendiente_;
     hayPulsacionPendiente_ = false;

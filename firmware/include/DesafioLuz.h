@@ -21,6 +21,7 @@ private:
     IndicadorLeds& leds_;
     uint8_t umbralLuzPorcentaje_ = 0;
     unsigned long inicioLuzSuficienteMs_ = 0;
+    unsigned long ultimaLuzSuficienteMs_ = 0;
     Estado estado_ = Estado::Inactivo;
     ResultadoDesafio resultado_ = ResultadoDesafio::EnCurso;
 

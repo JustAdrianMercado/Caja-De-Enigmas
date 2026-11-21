@@ -22,6 +22,7 @@ private:
     int distanciaMinimaCm_ = 0;
     int distanciaMaximaCm_ = 0;
     unsigned long inicioDentroDelRangoMs_ = 0;
+    unsigned long ultimaMuestraEnRangoMs_ = 0;
     Estado estado_ = Estado::Inactivo;
     ResultadoDesafio resultado_ = ResultadoDesafio::EnCurso;
 

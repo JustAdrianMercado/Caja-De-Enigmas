@@ -5,6 +5,7 @@
 namespace {
 
 constexpr unsigned long TiempoObjetivoMs = 2000UL;
+constexpr unsigned long IntervaloMaximoEntreMuestrasMs = 200UL;
 
 }
 
@@ -61,7 +62,10 @@ void DesafioDistancia::comprobarDistancia(int distanciaCm) {
 }
 
 void DesafioDistancia::mantenerDistancia(unsigned long ahoraMs) {
-    if (estado_ == Estado::BuscandoDistancia) {
+    const bool hayContinuidad = estado_ == Estado::DentroDelRango &&
+                               ahoraMs - ultimaMuestraEnRangoMs_ <= IntervaloMaximoEntreMuestrasMs;
+    ultimaMuestraEnRangoMs_ = ahoraMs;
+    if (!hayContinuidad) {
         estado_ = Estado::DentroDelRango;
         inicioDentroDelRangoMs_ = ahoraMs;
         leds_.encender(ColorLed::Verde);

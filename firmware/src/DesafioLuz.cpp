@@ -5,6 +5,7 @@
 namespace {
 
 constexpr unsigned long TiempoObjetivoMs = 1000UL;
+constexpr unsigned long IntervaloMaximoEntreMuestrasMs = 200UL;
 
 }
 
@@ -48,7 +49,10 @@ const char* DesafioLuz::nombre() const {
 }
 
 void DesafioLuz::mantenerLuz(unsigned long ahoraMs) {
-    if (estado_ == Estado::BuscandoLuz) {
+    const bool hayContinuidad = estado_ == Estado::ManteniendoLuz &&
+                               ahoraMs - ultimaLuzSuficienteMs_ <= IntervaloMaximoEntreMuestrasMs;
+    ultimaLuzSuficienteMs_ = ahoraMs;
+    if (!hayContinuidad) {
         estado_ = Estado::ManteniendoLuz;
         inicioLuzSuficienteMs_ = ahoraMs;
         leds_.encender(ColorLed::Verde);

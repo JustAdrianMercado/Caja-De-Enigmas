@@ -9,6 +9,7 @@ public:
     void iniciar();
     void actualizar();
     bool estaPulsado() const;
+    bool estaLiberado() const;
     bool fuePulsado();
 
 private:
