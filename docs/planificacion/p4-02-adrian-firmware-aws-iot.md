@@ -137,7 +137,7 @@ Llenar al cerrar cada iteración, con lo que **de verdad** quedó hecho. Si un c
 - **Archivos, commits y PR:**
   - nuevos: `TiposCaja.h`, `EventoCaja.h`, `PartidaEnigmas.*`, `AlmacenParametros.*` y `firmware/test/test_partida_enigmas/`;
   - cambiados: `ParametrosJuego.*`, `EstadoShadow.*`, `main.cpp`, `ConexionAwsIot.h`, `firmware/platformio.ini`, los tests de `EstadoShadow` y `ParametrosJuego`, y `docs/contratos.md` (secciones 3.2 y 9.1);
-  - rama `feat/firmware-aws-p4-it1`; PR: pendiente.
+  - rama `feat/firmware-aws-p4-it1`, PR #7.
 - **Decisiones y por qué:**
   - **El juego avisa sus movimientos de la cerradura como eventos** (`cerradura` con origen `edge`), y `main.cpp` mueve el servo al recibirlos. Así la secuencia completa del contrato (cerrar, iniciar, superar ×3, abrir, resolver) se prueba en la PC.
   - **`TiposCaja.h`** junta los `enum` que comparten el Shadow, los eventos y la partida, para que esos módulos no dependan unos de otros.
