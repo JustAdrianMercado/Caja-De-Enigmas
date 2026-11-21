@@ -15,7 +15,9 @@
  */
 class ConexionAwsIot {
 public:
-    static constexpr size_t TamanoMensaje = 2048;  // get/accepted incluye estado y metadatos.
+    // get/accepted incluye estado y metadatos: con el Shadow v2 llega a unos 1,7 KB, y queda
+    // margen para atributos agregados a mano desde la consola.
+    static constexpr size_t TamanoMensaje = 3072;
 
     enum class TipoMensaje : uint8_t {
         Delta,             // update/delta: cambios de desired que difieren de reported.
