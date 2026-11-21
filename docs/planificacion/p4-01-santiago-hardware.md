@@ -1,7 +1,7 @@
 # Plan de Santiago Torres — Montaje, clases del hardware y los tres desafíos
 
 **Rama:** `feat/hardware-p4` · **Archivos a tu cargo:**
-- en `firmware/include|src/`: `Pulsador.*`, `IndicadorLeds.*`, `SensorDistancia.*`, `SensorLuz.*`, `DesafioMemoria.*`, `DesafioDistancia.*`, `DesafioLuz.*` y `CerraduraServo.*` (se conserva);
+- en `firmware/include|src/`: `Pulsador.*`, `IndicadorLeds.*`, `SensorDistancia.*`, `SensorLuz.*`, `DesafioMemoria.*`, `DesafioDistancia.*`, `DesafioLuz.*`, `CerraduraServo.*` (se conserva) y `SensorTapa.*` (para borrarlo);
 - `firmware/include/ConfiguracionHardware.h`;
 - `firmware/pruebas/**`;
 - `docs/diagramas/circuito.*`, `docs/GUIA_MONTAJE.md` y `docs/PRUEBAS_FISICAS.md`.
@@ -19,12 +19,14 @@ Sos el responsable de que la caja exista físicamente y de que **los tres desaf�
   - 1 kΩ y 2 kΩ para bajar el ECHO del HC-SR04 de 5 V a 3,3 V.
 - Fuente de 5 V externa con GND común con el ESP32, o como mínimo un capacitor de 470–1000 µF. Con el servo y el HC-SR04 en VIN aumentan los picos de corriente.
 - La caja de cartón rígido o MDF de la P3.
-- **Ya no se usa el reed switch.** Adrián borra `SensorTapa.*` el viernes, porque `main.cpp` lo usa. Vos quitás `firmware/pruebas/reed` y el reed del circuito y de la guía.
+- **Ya no se usa el reed switch.** Adrián ya lo quitó de `main.cpp` y de `EstadoShadow`. Vos borrás, en un mismo PR, `SensorTapa.*`, `firmware/pruebas/reed` y su entorno `reed` en `firmware/pruebas/platformio.ini`, porque ese diagnóstico es lo único que todavía usa la clase. También quitás el reed del circuito y de la guía.
 
 ## Iteración 0 — vie 20: contrato y pines
 
 1. Los pines y los rangos ya están aprobados en [contratos.md, sección 8](../contratos.md). Si al montar hace falta cambiar un pin, o las primeras mediciones piden otros rangos, actualizar el contrato en el mismo PR. Los valores por defecto de distancia (20 cm) y luz (70 %) son provisionales: calibrarlos en la iteración 1.
-2. Revisar `Desafio.h` y `ParametrosJuego.h` con Adrián, antes de que los publique. Sobre todo la regla de que **ningún desafío bloquea `loop()`**: nada de `delay()`, y `pulseIn` con un límite de unos 25 ms.
+2. Revisar `Desafio.h` y `ParametrosJuego.h` en el PR de Adrián, antes de que se integren. Sobre todo:
+   - la regla de que **ningún desafío bloquea `loop()`**: nada de `delay()`, y `pulseIn` con un límite de unos 25 ms;
+   - el método `detener()`, que se agregó al contrato: se llama al abandonar la partida y apaga los LEDs del desafío.
 3. Actualizar `ConfiguracionHardware.h` con los pines nuevos y quitar `PinReedTapa`.
 4. Armar en la protoboard los LEDs y los pulsadores, que son lo más rápido de probar.
 
@@ -36,7 +38,7 @@ Una clase por componente, cada una con un diagnóstico propio en `firmware/prueb
 
 | Clase | Responsabilidad | Detalle |
 |---|---|---|
-| `Pulsador` | Lee un pulsador con antirrebote y detecta la pulsación. | Reutilizar el antirrebote de 50 ms de `SensorTapa.cpp` (copiarlo antes de que se borre). Método `fuePulsado()`. |
+| `Pulsador` | Lee un pulsador con antirrebote y detecta la pulsación. | Reutilizar el antirrebote de 50 ms de `SensorTapa.cpp`, y después borrar `SensorTapa.*` (ver Materiales). Método `fuePulsado()`. |
 | `IndicadorLeds` | Enciende, apaga y hace parpadear los 3 LEDs sin bloquear. | Necesita `actualizar()` con `millis()` para mostrar una secuencia o un parpadeo de éxito o de fallo. |
 | `SensorDistancia` | Mide en cm con el HC-SR04. | Una medición cada ~100 ms; `pulseIn` con un límite de ~25 ms; descartar las lecturas fuera de rango (por ejemplo, < 2 cm o > 200 cm). |
 | `SensorLuz` | Lee la LDR y la convierte a 0–100 %. | ADC1 (GPIO 34). Promedio de varias muestras. Calibrar el 0 % (tapada) y el 100 % (linterna). |
@@ -48,7 +50,7 @@ Una clase por componente, cada una con un diagnóstico propio en `firmware/prueb
 
 ## Iteración 2 — dom 22: los tres desafíos e integración con Adrián
 
-Cada desafío implementa `Desafio` (`iniciar(parametros)`, `actualizar()`, `resultado()`, `nombre()`) y se encarga de sus propios LEDs.
+Cada desafío implementa `Desafio` (`iniciar(parametros)`, `actualizar()`, `detener()`, `resultado()`, `nombre()`) y se encarga de sus propios LEDs.
 
 | Desafío | `nombre()` | Cómo se supera | Cuándo falla |
 |---|---|---|---|

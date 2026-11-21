@@ -16,9 +16,9 @@ Sos el responsable de que el objeto se comporte como un juego, de que lo sincron
 
 1. ~~Contrato v2~~: **hecho**. Aprobado el 20/11 y publicado en [docs/contratos.md](../contratos.md).
 2. Publicar en `main`:
-   - **`Desafio.h`**: la interfaz común. Incluye `enum class ResultadoDesafio { EnCurso, Superado, Fallado }` y los métodos `iniciar(const ParametrosJuego&)`, `actualizar()`, `resultado()` y `nombre()`. Un comentario fija la regla de que ningún desafío bloquea `loop()`.
+   - **`Desafio.h`**: la interfaz común. Incluye `enum class ResultadoDesafio { EnCurso, Superado, Fallado }` y los métodos `iniciar(const ParametrosJuego&)`, `actualizar()`, `detener()`, `resultado()` y `nombre()`. Un comentario fija la regla de que ningún desafío bloquea `loop()`.
    - **`ParametrosJuego.h`**: los parámetros (`longitudSecuencia`, `toleranciaCm`, `distanciaObjetivoCm` y `umbralLuzPorcentaje`), la tabla de dificultades y la validación de rangos, como lógica pura, para probarla en la PC.
-3. **Quitar la tapa**: borrar `SensorTapa.*`, `EstadoTapa` y su uso en `EstadoShadow` y `main.cpp`. `main` tiene que compilar y pasar `pio test -e pruebas`.
+3. **Quitar la tapa**: borrar `EstadoTapa` y el uso del reed en `EstadoShadow` y `main.cpp`. `main` tiene que compilar y pasar `pio test -e pruebas`. `SensorTapa.*` lo borra Santiago junto con `firmware/pruebas/reed`, que es lo único que todavía lo usa.
 4. **AWS (consola):**
    - ampliar `CajaEnigmasPolitica` con `iot:Publish` sobre `caja-enigmas/${iot:Connection.Thing.ThingName}/eventos`;
    - exportarla a `config/aws/politica-iot.json`;
@@ -95,13 +95,34 @@ Llenar al cerrar cada iteración, con lo que **de verdad** quedó hecho. Si un c
 
 ### Iteración 0 — vie 20
 - **Qué quedó funcionando:**
+  - Contrato v2 aprobado en `docs/contratos.md` (PR #5).
+  - `Desafio.h`: la interfaz de los desafíos, con `detener()`.
+  - `ParametrosJuego`: la tabla de dificultades, los rangos de los parámetros y los textos de la dificultad, con 12 tests nativos.
+  - `EstadoShadow` y `main.cpp` sin la tapa: el `reported` ya no incluye `tapa`.
 - **Archivos, commits y PR:**
+  - nuevos: `firmware/include/Desafio.h`, `firmware/include/ParametrosJuego.h`, `firmware/src/ParametrosJuego.cpp` y `firmware/test/test_parametros_juego/`;
+  - cambiados: `EstadoShadow.*`, `main.cpp`, `test_estado_shadow`, `firmware/platformio.ini` (`ParametrosJuego.cpp` en el entorno `pruebas`), `config/aws/politica-iot.json` y `docs/contratos.md` (sección 10);
+  - rama `feat/firmware-aws-p4`; PR: pendiente.
 - **Decisiones y por qué:**
-- **Configuración en AWS (sin secretos):**
+  - **`detener()` en la interfaz:** sin él, al pasar a modo manual o reiniciar una partida, un LED del desafío en curso podía quedar encendido.
+  - **`Superado` y `Fallado` son finales** hasta el próximo `iniciar()`: así `PartidaEnigmas` lee el resultado sin que cambie entre dos vueltas de `loop()`.
+  - **La validación recibe `int32_t`:** un 276 que llegue del Shadow se rechaza, en lugar de convertirse en 20 al guardarlo en un `uint8_t`.
+  - **`SensorTapa.*` lo borra Santiago** con `pruebas/reed`: ese diagnóstico es lo único que todavía usa la clase, y él reutiliza el antirrebote en `Pulsador`. Así los dos proyectos de PlatformIO siguen compilando en `main`.
+- **Configuración en AWS (sin secretos):** sentencia nueva `PublicarSusEventos` en `config/aws/politica-iot.json`. **Pendiente:** aplicarla en la consola como versión nueva de `CajaEnigmasPolitica`.
 - **Pruebas y valores medidos:**
-- **Evidencias:**
+  - `pio test -e pruebas`: 30 de 30 (18 de `EstadoShadow` y 12 de `ParametrosJuego`);
+  - `pio run -e caja`: compila;
+  - `Desafio.h` compila con una implementación de prueba, sin advertencias con `-Wall -Wextra`.
+- **Evidencias:** —
 - **Cambios al contrato o al plan:**
+  - Sección 10: `detener()`, resultados finales y copia de los parámetros en `iniciar()`.
+  - Plan: el borrado de `SensorTapa.*` pasa a Santiago.
+  - El tema y el payload de ejemplo para Mateo ya están en la sección 3.2 del contrato.
 - **Problemas y pendientes:**
+  - Aplicar la política en la consola de IoT.
+  - El Shadow de `caja-enigmas-01` conserva el `reported.tapa` viejo, porque el ESP32 ya no lo reporta pero tampoco lo borra. Se borra publicando una vez `{"state":{"reported":{"tapa":null}}}`.
+  - La sesión de AWS CLI estaba vencida, así que no se comparó la política del repo con la activa.
+  - Para las pruebas nativas, `C:\MinGW\bin` tiene que estar en el `PATH` (g++).
 
 ### Iteración 1 — sáb 21
 - **Qué quedó funcionando:**
