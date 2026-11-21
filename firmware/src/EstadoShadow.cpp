@@ -54,20 +54,9 @@ EstadoCerradura EstadoShadow::cerradura() const {
     return cerradura_;
 }
 
-EstadoTapa EstadoShadow::tapa() const {
-    return tapa_;
-}
-
 void EstadoShadow::establecerCerradura(EstadoCerradura nuevoEstado) {
     if (nuevoEstado != cerradura_) {
         cerradura_ = nuevoEstado;
-        hayCambiosSinReportar_ = true;
-    }
-}
-
-void EstadoShadow::establecerTapa(EstadoTapa nuevoEstado) {
-    if (nuevoEstado != tapa_) {
-        tapa_ = nuevoEstado;
         hayCambiosSinReportar_ = true;
     }
 }
@@ -91,7 +80,6 @@ bool EstadoShadow::escribirReporte(char* destino, size_t capacidad) const {
     JsonDocument documento;
     JsonObject reportado = documento["state"]["reported"].to<JsonObject>();
     reportado["cerradura"] = textoCerradura(cerradura_);
-    reportado["tapa"] = textoTapa(tapa_);
     reportado["codigoVinculacion"] = codigoVinculacion_;
     reportado["firmware"] = versionFirmware_;
 
@@ -127,8 +115,4 @@ bool EstadoShadow::leerOrdenDocumentoCompleto(const char* json, OrdenCerradura& 
 
 const char* EstadoShadow::textoCerradura(EstadoCerradura estado) {
     return estado == EstadoCerradura::Abierta ? TextoAbierta : TextoCerrada;
-}
-
-const char* EstadoShadow::textoTapa(EstadoTapa estado) {
-    return estado == EstadoTapa::Abierta ? TextoAbierta : TextoCerrada;
 }

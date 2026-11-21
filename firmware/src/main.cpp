@@ -1,7 +1,7 @@
 // Caja de los Enigmas - objeto inteligente.
 // Sincroniza su estado con el Device Shadow de AWS IoT Core: mueve el servo de la cerradura
-// segun las ordenes del delta y reporta la cerradura, la tapa (reed switch) y el codigo de
-// vinculacion. Por Serial acepta comandos de prueba (escribir "ayuda").
+// segun las ordenes del delta y reporta la cerradura y el codigo de vinculacion.
+// Por Serial acepta comandos de prueba (escribir "ayuda").
 
 #include <Arduino.h>
 #include <string.h>
@@ -13,7 +13,6 @@
 #include "ConfiguracionHardware.h"
 #include "ConsolaSerial.h"
 #include "EstadoShadow.h"
-#include "SensorTapa.h"
 
 #if __has_include("ConfiguracionWifi.h")
 #include "ConfiguracionWifi.h"
@@ -38,7 +37,6 @@ ConexionAwsIot conexionAws(conexionWifi, EndpointAwsIot, PuertoAwsIot, NombreThi
                            CertificadoCaAmazon, CertificadoDispositivo, ClavePrivadaDispositivo);
 CerraduraServo cerraduraServo(PinServoCerradura, AnguloCerraduraCerradaGrados,
                               AnguloCerraduraAbiertaGrados);
-SensorTapa sensorTapa(PinReedTapa);
 CodigoVinculacion codigoVinculacion;
 EstadoShadow estadoShadow(codigoVinculacion.texto(), VersionFirmware);
 ConsolaSerial consola;
@@ -46,7 +44,7 @@ ConsolaSerial consola;
 ConexionAwsIot::MensajeShadow mensajeRecibido;  // Global: 2 KB fuera de la pila de loop().
 unsigned long ultimoReporteMs = 0;
 
-// --- Actuador y sensor ---------------------------------------------------------------------
+// --- Actuador --------------------------------------------------------------------------------
 
 void moverCerradura(EstadoCerradura estadoPedido) {
     if (estadoPedido == EstadoCerradura::Abierta) {
@@ -57,21 +55,6 @@ void moverCerradura(EstadoCerradura estadoPedido) {
     estadoShadow.establecerCerradura(estadoPedido);
     Serial.print(F("Cerradura: "));
     Serial.println(EstadoShadow::textoCerradura(estadoPedido));
-}
-
-EstadoTapa leerEstadoTapa() {
-    return sensorTapa.estaAbierta() ? EstadoTapa::Abierta : EstadoTapa::Cerrada;
-}
-
-void actualizarTapa() {
-    sensorTapa.actualizar();
-    if (!sensorTapa.huboCambio()) {
-        return;
-    }
-    const EstadoTapa estadoTapa = leerEstadoTapa();
-    estadoShadow.establecerTapa(estadoTapa);  // Se reporta en esta misma vuelta del loop().
-    Serial.print(F("Tapa: "));
-    Serial.println(EstadoShadow::textoTapa(estadoTapa));
 }
 
 // --- Ordenes del Shadow ----------------------------------------------------------------------
@@ -143,8 +126,6 @@ void mostrarAyuda() {
 void mostrarEstado() {
     Serial.print(F("Estado: cerradura="));
     Serial.print(EstadoShadow::textoCerradura(estadoShadow.cerradura()));
-    Serial.print(F(" tapa="));
-    Serial.print(EstadoShadow::textoTapa(estadoShadow.tapa()));
     Serial.print(F(" aws="));
     Serial.println(conexionAws.estaConectada() ? F("conectado") : F("desconectado"));
 }
@@ -178,9 +159,7 @@ void setup() {
     Serial.println(VersionFirmware);
 
     cerraduraServo.iniciar();  // Arranca cerrada.
-    sensorTapa.iniciar();
     estadoShadow.establecerCerradura(EstadoCerradura::Cerrada);
-    estadoShadow.establecerTapa(leerEstadoTapa());
 
     codigoVinculacion.iniciar();
     Serial.print(F("Vinculacion: codigo de esta caja = "));
@@ -201,7 +180,6 @@ void loop() {
     while (conexionAws.tomarMensaje(mensajeRecibido)) {
         procesarMensaje(mensajeRecibido);
     }
-    actualizarTapa();
     atenderConsola();
     solicitarReportePeriodico();
     publicarReporteSiHaceFalta();
