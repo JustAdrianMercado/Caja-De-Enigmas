@@ -17,6 +17,12 @@
       "Resource": "arn:aws:iot:us-east-1:<ID_CUENTA>:topic/$aws/things/${iot:Connection.Thing.ThingName}/shadow/*"
     },
     {
+      "Sid": "PublicarSusEventos",
+      "Effect": "Allow",
+      "Action": "iot:Publish",
+      "Resource": "arn:aws:iot:us-east-1:<ID_CUENTA>:topic/caja-enigmas/${iot:Connection.Thing.ThingName}/eventos"
+    },
+    {
       "Sid": "SuscribirseASuShadow",
       "Effect": "Allow",
       "Action": "iot:Subscribe",

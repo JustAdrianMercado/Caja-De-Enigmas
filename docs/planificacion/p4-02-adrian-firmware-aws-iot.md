@@ -16,9 +16,9 @@ Sos el responsable de que el objeto se comporte como un juego, de que lo sincron
 
 1. ~~Contrato v2~~: **hecho**. Aprobado el 20/11 y publicado en [docs/contratos.md](../contratos.md).
 2. Publicar en `main`:
-   - **`Desafio.h`**: la interfaz común. Incluye `enum class ResultadoDesafio { EnCurso, Superado, Fallado }` y los métodos `iniciar(const ParametrosJuego&)`, `actualizar()`, `resultado()` y `nombre()`. Un comentario fija la regla de que ningún desafío bloquea `loop()`.
+   - **`Desafio.h`**: la interfaz común. Incluye `enum class ResultadoDesafio { EnCurso, Superado, Fallado }` y los métodos `iniciar(const ParametrosJuego&)`, `actualizar()`, `detener()`, `resultado()` y `nombre()`. Un comentario fija la regla de que ningún desafío bloquea `loop()`.
    - **`ParametrosJuego.h`**: los parámetros (`longitudSecuencia`, `toleranciaCm`, `distanciaObjetivoCm` y `umbralLuzPorcentaje`), la tabla de dificultades y la validación de rangos, como lógica pura, para probarla en la PC.
-3. **Quitar la tapa**: borrar `SensorTapa.*`, `EstadoTapa` y su uso en `EstadoShadow` y `main.cpp`. `main` tiene que compilar y pasar `pio test -e pruebas`.
+3. **Quitar la tapa**: borrar `EstadoTapa` y el uso del reed en `EstadoShadow` y `main.cpp`. `main` tiene que compilar y pasar `pio test -e pruebas`. `SensorTapa.*` lo borra Santiago junto con `firmware/pruebas/reed`, que es lo único que todavía lo usa.
 4. **AWS (consola):**
    - ampliar `CajaEnigmasPolitica` con `iot:Publish` sobre `caja-enigmas/${iot:Connection.Thing.ThingName}/eventos`;
    - exportarla a `config/aws/politica-iot.json`;
@@ -33,7 +33,7 @@ Sos el responsable de que el objeto se comporte como un juego, de que lo sincron
   - recorre `esperando → memoria → distancia → luz → resuelta` con tres `Desafio&` que recibe en el constructor;
   - inicia con el pulsador de inicio o con un `solicitudPartida` nuevo;
   - cuenta los intentos y la duración de cada desafío, y produce los eventos del contrato;
-  - en modo `manual` queda en pausa;
+  - al pasar a modo `manual` abandona la partida (contrato, sección 9.1);
   - el tiempo se recibe desde afuera, así que no usa `millis()` y se puede probar.
 - **Tests** en `firmware/test/test_partida_enigmas/`, con un `DesafioFalso` que se supera o falla cuando el test lo indica. Agregar `PartidaEnigmas.cpp` y `ParametrosJuego.cpp` a `build_src_filter` del entorno `pruebas`.
 - **`AlmacenParametros`:** guarda el modo, la dificultad y los parámetros en NVS con `Preferences`, igual que `CodigoVinculacion`. Así el juego queda configurado después de un reinicio sin red.
@@ -95,23 +95,79 @@ Llenar al cerrar cada iteración, con lo que **de verdad** quedó hecho. Si un c
 
 ### Iteración 0 — vie 20
 - **Qué quedó funcionando:**
+  - Contrato v2 aprobado en `docs/contratos.md` (PR #5).
+  - `Desafio.h`: la interfaz de los desafíos, con `detener()`.
+  - `ParametrosJuego`: la tabla de dificultades, los rangos de los parámetros y los textos de la dificultad, con 12 tests nativos.
+  - `EstadoShadow` y `main.cpp` sin la tapa: el `reported` ya no incluye `tapa`.
 - **Archivos, commits y PR:**
+  - nuevos: `firmware/include/Desafio.h`, `firmware/include/ParametrosJuego.h`, `firmware/src/ParametrosJuego.cpp` y `firmware/test/test_parametros_juego/`;
+  - cambiados: `EstadoShadow.*`, `main.cpp`, `test_estado_shadow`, `firmware/platformio.ini` (`ParametrosJuego.cpp` en el entorno `pruebas`), `config/aws/politica-iot.json` y `docs/contratos.md` (sección 10);
+  - rama `feat/firmware-aws-p4`, PR #6.
 - **Decisiones y por qué:**
-- **Configuración en AWS (sin secretos):**
+  - **`detener()` en la interfaz:** sin él, al pasar a modo manual o reiniciar una partida, un LED del desafío en curso podía quedar encendido.
+  - **`Superado` y `Fallado` son finales** hasta el próximo `iniciar()`: así `PartidaEnigmas` lee el resultado sin que cambie entre dos vueltas de `loop()`.
+  - **La validación recibe `int32_t`:** un 276 que llegue del Shadow se rechaza, en lugar de convertirse en 20 al guardarlo en un `uint8_t`.
+  - **`SensorTapa.*` lo borra Santiago** con `pruebas/reed`: ese diagnóstico es lo único que todavía usa la clase, y él reutiliza el antirrebote en `Pulsador`. Así los dos proyectos de PlatformIO siguen compilando en `main`.
+- **Configuración en AWS (sin secretos):** sentencia nueva `PublicarSusEventos` en `config/aws/politica-iot.json`. **Pendiente:** aplicarla en la consola como versión nueva de `CajaEnigmasPolitica`.
 - **Pruebas y valores medidos:**
-- **Evidencias:**
+  - `pio test -e pruebas`: 30 de 30 (18 de `EstadoShadow` y 12 de `ParametrosJuego`);
+  - `pio run -e caja`: compila;
+  - `Desafio.h` compila con una implementación de prueba, sin advertencias con `-Wall -Wextra`.
+- **Evidencias:** —
 - **Cambios al contrato o al plan:**
+  - Sección 10: `detener()`, resultados finales y copia de los parámetros en `iniciar()`.
+  - Plan: el borrado de `SensorTapa.*` pasa a Santiago.
+  - El tema y el payload de ejemplo para Mateo ya están en la sección 3.2 del contrato.
 - **Problemas y pendientes:**
+  - Aplicar la política en la consola de IoT.
+  - El Shadow de `caja-enigmas-01` conserva el `reported.tapa` viejo, porque el ESP32 ya no lo reporta pero tampoco lo borra. Se borra publicando una vez `{"state":{"reported":{"tapa":null}}}`.
+  - La sesión de AWS CLI estaba vencida, así que no se comparó la política del repo con la activa.
+  - Para las pruebas nativas, `C:\MinGW\bin` tiene que estar en el `PATH` (g++).
 
 ### Iteración 1 — sáb 21
 - **Qué quedó funcionando:**
+  - **`PartidaEnigmas`**: la máquina de estados del Edge. Produce los eventos del contrato y decide cuándo se mueve la cerradura en el juego. Tiene 20 tests con desafíos falsos.
+  - **`EstadoShadow` v2**: lee cada atributo del `delta` por separado, descarta los inválidos y reporta el estado completo del contrato v2. Tiene 32 tests.
+  - **`ConfiguracionJuego`** (en `ParametrosJuego`): modo, dificultad y calibración. Incluye la regla de la cerradura en modo juego y la carga validada desde la NVS.
+  - **`AlmacenParametros`**: guarda en la NVS la configuración, `idPartida` y `solicitudPartida`.
+  - **`main.cpp`** (firmware 0.3.0):
+    - aplica el modo, la dificultad y los parámetros del `delta`, los guarda en la NVS y reporta el Shadow v2;
+    - mueve la cerradura por voz solo en modo manual;
+    - **no se probó en la placa.**
 - **Archivos, commits y PR:**
+  - nuevos: `TiposCaja.h`, `EventoCaja.h`, `PartidaEnigmas.*`, `AlmacenParametros.*` y `firmware/test/test_partida_enigmas/`;
+  - cambiados: `ParametrosJuego.*`, `EstadoShadow.*`, `main.cpp`, `ConexionAwsIot.h`, `firmware/platformio.ini`, los tests de `EstadoShadow` y `ParametrosJuego`, y `docs/contratos.md` (secciones 3.2 y 9.1);
+  - rama `feat/firmware-aws-p4-it1`, PR #7.
 - **Decisiones y por qué:**
-- **Configuración en AWS (sin secretos):**
+  - **El juego avisa sus movimientos de la cerradura como eventos** (`cerradura` con origen `edge`), y `main.cpp` mueve el servo al recibirlos. Así la secuencia completa del contrato (cerrar, iniciar, superar ×3, abrir, resolver) se prueba en la PC.
+  - **`TiposCaja.h`** junta los `enum` que comparten el Shadow, los eventos y la partida, para que esos módulos no dependan unos de otros.
+  - **`PartidaEnigmas` maneja `solicitudPartida`:** la adopta siempre, también en modo manual, para que el `delta` se limpie. Solo inicia una partida en modo juego, y un valor repetido no hace nada.
+  - **El `delta` se valida por tipo:** se rechazan `"20"` (texto), `70.5`, `-1` y `276`. Este último se habría convertido en 20 al guardarse en 8 bits.
+  - **La NVS guarda los `enum` como números y los valida al cargar.** Un valor inválido vuelve al de fábrica sin cambiar los demás.
+  - **Buffers:**
+    - el de mensajes MQTT sube a 3 KB, porque el `get/accepted` v2 mide 1651 bytes en el peor caso y con 2 KB quedaba poco margen;
+    - el del reporte sube a 512 bytes, y el reporte más largo ocupa 370.
+  - **La duración de un desafío cuenta desde su primer intento**, y la duración y los intentos se saturan en el rango del contrato para que la Lambda no descarte el evento.
+- **Configuración en AWS (sin secretos):** —
 - **Pruebas y valores medidos:**
-- **Evidencias:**
+  - `pio test -e pruebas`: 70 de 70 (32 de `EstadoShadow`, 18 de `ParametrosJuego` y 20 de `PartidaEnigmas`). Cubren:
+    - la partida completa;
+    - el fallo y el reintento en la memoria;
+    - el modo manual;
+    - la solicitud repetida;
+    - los parámetros fuera de rango;
+    - el desborde de `millis()`.
+  - `pio run -e caja`: compila, con 17,4 % de RAM (57 048 B) y 71,7 % de Flash.
+  - Sin advertencias con `-Wall -Wextra` en la lógica pura.
+- **Evidencias:** —
 - **Cambios al contrato o al plan:**
+  - Contrato 3.2: `duracionMs` cuenta desde el primer intento, y la duración y los intentos se saturan.
+  - Contrato 9.1: pasar a manual no publica ningún evento, y una partida resuelta también vuelve a `esperando`.
+  - Plan: "en modo manual queda en pausa" pasa a "abandona la partida", como dice el contrato.
 - **Problemas y pendientes:**
+  - `main.cpp` todavía no crea la `PartidaEnigmas`, porque faltan los desafíos de Santiago (iteración 2). Hasta entonces, `solicitudPartida` queda pendiente en el `delta` y `estadoPartida` se reporta siempre `esperando`.
+  - Falta probarlo en la placa con Santiago: la NVS, el `delta` v2 y el tamaño real del `get/accepted`.
+  - Con el firmware 0.3.0, la caja arranca en modo juego. Mientras no esté integrada la partida, en ese modo la cerradura no se abre por voz: hay que pasar a manual o usar el comando Serial `abrir`.
 
 ### Iteración 2 — dom 22
 - **Qué quedó funcionando:**

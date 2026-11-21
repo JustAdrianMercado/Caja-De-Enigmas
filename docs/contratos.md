@@ -127,6 +127,8 @@ Tema: `caja-enigmas/<thingName>/eventos`. Lo publican el ESP32 y, solo para las 
 | `dificultad` | string | `facil`, `normal`, `dificil` |
 | `tsObjeto` | string, ISO-8601 UTC con ms | Hora del ESP32. Se omite si todavía no hay hora NTP (por ejemplo, arrancó sin red). |
 
+- **`duracionMs` de `desafio_superado`** cuenta desde el primer intento de ese desafío, con los reintentos incluidos. `intentos` es 1 más la cantidad de fallos.
+- El ESP32 **satura** `duracionMs` en 3 600 000 e `intentos` en 99. Así un evento de una partida muy larga no queda fuera del rango y no se descarta.
 - **`origen` de la cerradura:**
   - `voz` cuando el servo se mueve por un `delta`, porque solo la skill escribe `desired.cerradura`;
   - `edge` cuando lo mueve el juego: cierra al iniciar una partida y abre al resolverla;
@@ -301,7 +303,7 @@ El servo lo pueden mover el juego (al resolver los desafíos) y la voz (RF5). Pa
 | Pistas, progreso y parámetros por voz | Disponibles. | Disponibles. |
 
 **Al cambiar de modo:**
-- **A `manual`:** se detiene la partida en curso, que queda abandonada (`estadoPartida = "esperando"`, `desafioActual = "ninguno"`).
+- **A `manual`:** se detiene la partida en curso, que queda abandonada (`estadoPartida = "esperando"`, `desafioActual = "ninguno"`). No se publica ningún evento. Una partida ya resuelta también vuelve a `esperando`.
 - **A `juego`:** la cerradura queda como estaba hasta que se inicie una partida. La skill pone `desired.cerradura` en `null` (sección 2).
 
 ### 9.2 Partida (lógica del Edge)
@@ -354,6 +356,8 @@ public:
     virtual void iniciar(const ParametrosJuego& parametros) = 0;
     // Se llama en cada vuelta de loop(); nunca bloquea.
     virtual void actualizar() = 0;
+    // Al abandonar la partida (paso a modo manual o reinicio): apaga sus LEDs y deja de medir.
+    virtual void detener() = 0;
     virtual ResultadoDesafio resultado() const = 0;
     // "memoria", "distancia" o "luz", igual que en el Shadow y los eventos.
     virtual const char* nombre() const = 0;
@@ -369,6 +373,9 @@ struct ParametrosJuego {
 
 Reglas:
 - **Ningún desafío bloquea `loop()`.** Nada de `delay()`: los tiempos se manejan con `millis()`. `pulseIn` del HC-SR04 tiene un límite de unos 25 ms, y se mide como máximo cada 100 ms.
-- Cada desafío maneja sus propios LEDs.
+- Cada desafío maneja sus propios LEDs. Si la partida se abandona a mitad de un desafío, `PartidaEnigmas` llama a `detener()` para que no quede ningún LED encendido.
+- `Superado` y `Fallado` son finales: el resultado no cambia hasta el próximo `iniciar()`.
 - Después de `Fallado`, `PartidaEnigmas` cuenta el intento y vuelve a llamar a `iniciar()`.
+- `iniciar()` copia los parámetros que necesita. Si cambian por voz durante la partida, se aplican recién en el próximo `iniciar()`.
 - `ParametrosJuego` y la tabla de dificultades son lógica pura, sin Arduino, para probarlas en la PC (`pio test -e pruebas`). La persistencia en NVS va en una clase aparte.
+- El código de referencia está en [firmware/include/Desafio.h](../firmware/include/Desafio.h) y [firmware/include/ParametrosJuego.h](../firmware/include/ParametrosJuego.h).
