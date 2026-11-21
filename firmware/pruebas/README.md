@@ -29,6 +29,7 @@ usando `firmware/src` y su configuración no se modifica.
 ```powershell
 pio run -d firmware/pruebas -e servo
 pio run -d firmware/pruebas -e reed
+pio run -d firmware/pruebas -e distancia -e luz
 pio run -d firmware -e caja
 ```
 
@@ -114,3 +115,21 @@ todos los rebotes eléctricos; su impresión también consume tiempo.
 El equipo confirmó LOW con imán cerca y HIGH con imán lejos. No registró
 distancias ni mediciones instrumentales de antirrebote; el resumen Serial
 permite observar el comportamiento muestreado, con las limitaciones descritas.
+
+## P4: diagnósticos de distancia y luz
+
+Los entornos `distancia` y `luz` funcionan por separado y muestran datos por
+Serial a 115200 baudios.
+
+- **Distancia.** Alimentar el HC-SR04 a 5 V con GND común. Conectar TRIG a GPIO23
+  y ECHO a GPIO19 mediante el divisor, con 1 kΩ entre ECHO y GPIO19 y 2 kΩ entre
+  GPIO19 y GND. Comparar las lecturas con una regla a 10, 20 y 30 cm. Comprobar
+  también los avisos de falta de eco y de distancia fuera de 2–400 cm.
+- **Luz.** Conectar el punto medio del divisor de LDR y 10 kΩ a GPIO34. El
+  diagnóstico muestra el promedio de ocho lecturas ADC sin convertir a voltios,
+  el porcentaje y, al arrancar, la calibración provisional de 0 para oscuridad
+  y 4095 para luz intensa. Este ajuste supone que la lectura sube con la luz
+  (LDR hacia 3,3 V y resistencia hacia GND). Registrar las lecturas con la LDR
+  tapada, con luz ambiente y con una linterna. Después pasar los valores medidos
+  de oscuridad y luz intensa a `configurarCalibracion()`, en ese orden, aunque
+  el ADC disminuya al iluminar.

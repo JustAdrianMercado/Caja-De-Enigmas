@@ -17,6 +17,10 @@ constexpr uint8_t PinPulsadorAmarillo = 14;
 constexpr uint8_t PinPulsadorVerde = 16;
 constexpr uint8_t PinPulsadorInicio = 17;
 
+constexpr uint8_t PinDistanciaTrig = 23;
+constexpr uint8_t PinDistanciaEcho = 19;
+constexpr uint8_t PinLdr = 34;
+
 // PROVISIONALES: dentro del rango seguro 45-135 de firmware/pruebas/servo.
 // Calibrar con esa prueba los angulos que de verdad traban y destraban la tapa.
 constexpr int AnguloCerraduraCerradaGrados = 45;
