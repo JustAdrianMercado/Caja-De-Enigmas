@@ -354,6 +354,8 @@ public:
     virtual void iniciar(const ParametrosJuego& parametros) = 0;
     // Se llama en cada vuelta de loop(); nunca bloquea.
     virtual void actualizar() = 0;
+    // Al abandonar la partida (paso a modo manual o reinicio): apaga sus LEDs y deja de medir.
+    virtual void detener() = 0;
     virtual ResultadoDesafio resultado() const = 0;
     // "memoria", "distancia" o "luz", igual que en el Shadow y los eventos.
     virtual const char* nombre() const = 0;
@@ -369,6 +371,9 @@ struct ParametrosJuego {
 
 Reglas:
 - **Ningún desafío bloquea `loop()`.** Nada de `delay()`: los tiempos se manejan con `millis()`. `pulseIn` del HC-SR04 tiene un límite de unos 25 ms, y se mide como máximo cada 100 ms.
-- Cada desafío maneja sus propios LEDs.
+- Cada desafío maneja sus propios LEDs. Si la partida se abandona a mitad de un desafío, `PartidaEnigmas` llama a `detener()` para que no quede ningún LED encendido.
+- `Superado` y `Fallado` son finales: el resultado no cambia hasta el próximo `iniciar()`.
 - Después de `Fallado`, `PartidaEnigmas` cuenta el intento y vuelve a llamar a `iniciar()`.
+- `iniciar()` copia los parámetros que necesita. Si cambian por voz durante la partida, se aplican recién en el próximo `iniciar()`.
 - `ParametrosJuego` y la tabla de dificultades son lógica pura, sin Arduino, para probarlas en la PC (`pio test -e pruebas`). La persistencia en NVS va en una clase aparte.
+- El código de referencia está en [firmware/include/Desafio.h](../firmware/include/Desafio.h) y [firmware/include/ParametrosJuego.h](../firmware/include/ParametrosJuego.h).

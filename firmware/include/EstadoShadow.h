@@ -4,7 +4,6 @@
 #include <stdint.h>
 
 enum class EstadoCerradura : uint8_t { Cerrada, Abierta };
-enum class EstadoTapa : uint8_t { Cerrada, Abierta };
 
 /** Lo que un mensaje del Shadow pide sobre la cerradura. */
 struct OrdenCerradura {
@@ -25,9 +24,7 @@ public:
     EstadoShadow(const char* codigoVinculacion, const char* versionFirmware);
 
     EstadoCerradura cerradura() const;
-    EstadoTapa tapa() const;
     void establecerCerradura(EstadoCerradura nuevoEstado);
-    void establecerTapa(EstadoTapa nuevoEstado);
 
     // Pide reportar aunque nada haya cambiado: al reconectar, cada 60 s o tras un valor invalido.
     void solicitarReporte();
@@ -46,12 +43,10 @@ public:
     static bool leerOrdenDocumentoCompleto(const char* json, OrdenCerradura& orden);
 
     static const char* textoCerradura(EstadoCerradura estado);
-    static const char* textoTapa(EstadoTapa estado);
 
 private:
     const char* codigoVinculacion_;
     const char* versionFirmware_;
     EstadoCerradura cerradura_ = EstadoCerradura::Cerrada;
-    EstadoTapa tapa_ = EstadoTapa::Cerrada;
     bool hayCambiosSinReportar_ = true;  // El primer reporte siempre se envia.
 };
