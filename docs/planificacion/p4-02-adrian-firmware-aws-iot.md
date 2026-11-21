@@ -33,7 +33,7 @@ Sos el responsable de que el objeto se comporte como un juego, de que lo sincron
   - recorre `esperando → memoria → distancia → luz → resuelta` con tres `Desafio&` que recibe en el constructor;
   - inicia con el pulsador de inicio o con un `solicitudPartida` nuevo;
   - cuenta los intentos y la duración de cada desafío, y produce los eventos del contrato;
-  - en modo `manual` queda en pausa;
+  - al pasar a modo `manual` abandona la partida (contrato, sección 9.1);
   - el tiempo se recibe desde afuera, así que no usa `millis()` y se puede probar.
 - **Tests** en `firmware/test/test_partida_enigmas/`, con un `DesafioFalso` que se supera o falla cuando el test lo indica. Agregar `PartidaEnigmas.cpp` y `ParametrosJuego.cpp` a `build_src_filter` del entorno `pruebas`.
 - **`AlmacenParametros`:** guarda el modo, la dificultad y los parámetros en NVS con `Preferences`, igual que `CodigoVinculacion`. Así el juego queda configurado después de un reinicio sin red.
@@ -126,13 +126,48 @@ Llenar al cerrar cada iteración, con lo que **de verdad** quedó hecho. Si un c
 
 ### Iteración 1 — sáb 21
 - **Qué quedó funcionando:**
+  - **`PartidaEnigmas`**: la máquina de estados del Edge. Produce los eventos del contrato y decide cuándo se mueve la cerradura en el juego. Tiene 20 tests con desafíos falsos.
+  - **`EstadoShadow` v2**: lee cada atributo del `delta` por separado, descarta los inválidos y reporta el estado completo del contrato v2. Tiene 32 tests.
+  - **`ConfiguracionJuego`** (en `ParametrosJuego`): modo, dificultad y calibración. Incluye la regla de la cerradura en modo juego y la carga validada desde la NVS.
+  - **`AlmacenParametros`**: guarda en la NVS la configuración, `idPartida` y `solicitudPartida`.
+  - **`main.cpp`** (firmware 0.3.0):
+    - aplica el modo, la dificultad y los parámetros del `delta`, los guarda en la NVS y reporta el Shadow v2;
+    - mueve la cerradura por voz solo en modo manual;
+    - **no se probó en la placa.**
 - **Archivos, commits y PR:**
+  - nuevos: `TiposCaja.h`, `EventoCaja.h`, `PartidaEnigmas.*`, `AlmacenParametros.*` y `firmware/test/test_partida_enigmas/`;
+  - cambiados: `ParametrosJuego.*`, `EstadoShadow.*`, `main.cpp`, `ConexionAwsIot.h`, `firmware/platformio.ini`, los tests de `EstadoShadow` y `ParametrosJuego`, y `docs/contratos.md` (secciones 3.2 y 9.1);
+  - rama `feat/firmware-aws-p4-it1`, PR #7.
 - **Decisiones y por qué:**
-- **Configuración en AWS (sin secretos):**
+  - **El juego avisa sus movimientos de la cerradura como eventos** (`cerradura` con origen `edge`), y `main.cpp` mueve el servo al recibirlos. Así la secuencia completa del contrato (cerrar, iniciar, superar ×3, abrir, resolver) se prueba en la PC.
+  - **`TiposCaja.h`** junta los `enum` que comparten el Shadow, los eventos y la partida, para que esos módulos no dependan unos de otros.
+  - **`PartidaEnigmas` maneja `solicitudPartida`:** la adopta siempre, también en modo manual, para que el `delta` se limpie. Solo inicia una partida en modo juego, y un valor repetido no hace nada.
+  - **El `delta` se valida por tipo:** se rechazan `"20"` (texto), `70.5`, `-1` y `276`. Este último se habría convertido en 20 al guardarse en 8 bits.
+  - **La NVS guarda los `enum` como números y los valida al cargar.** Un valor inválido vuelve al de fábrica sin cambiar los demás.
+  - **Buffers:**
+    - el de mensajes MQTT sube a 3 KB, porque el `get/accepted` v2 mide 1651 bytes en el peor caso y con 2 KB quedaba poco margen;
+    - el del reporte sube a 512 bytes, y el reporte más largo ocupa 370.
+  - **La duración de un desafío cuenta desde su primer intento**, y la duración y los intentos se saturan en el rango del contrato para que la Lambda no descarte el evento.
+- **Configuración en AWS (sin secretos):** —
 - **Pruebas y valores medidos:**
-- **Evidencias:**
+  - `pio test -e pruebas`: 70 de 70 (32 de `EstadoShadow`, 18 de `ParametrosJuego` y 20 de `PartidaEnigmas`). Cubren:
+    - la partida completa;
+    - el fallo y el reintento en la memoria;
+    - el modo manual;
+    - la solicitud repetida;
+    - los parámetros fuera de rango;
+    - el desborde de `millis()`.
+  - `pio run -e caja`: compila, con 17,4 % de RAM (57 048 B) y 71,7 % de Flash.
+  - Sin advertencias con `-Wall -Wextra` en la lógica pura.
+- **Evidencias:** —
 - **Cambios al contrato o al plan:**
+  - Contrato 3.2: `duracionMs` cuenta desde el primer intento, y la duración y los intentos se saturan.
+  - Contrato 9.1: pasar a manual no publica ningún evento, y una partida resuelta también vuelve a `esperando`.
+  - Plan: "en modo manual queda en pausa" pasa a "abandona la partida", como dice el contrato.
 - **Problemas y pendientes:**
+  - `main.cpp` todavía no crea la `PartidaEnigmas`, porque faltan los desafíos de Santiago (iteración 2). Hasta entonces, `solicitudPartida` queda pendiente en el `delta` y `estadoPartida` se reporta siempre `esperando`.
+  - Falta probarlo en la placa con Santiago: la NVS, el `delta` v2 y el tamaño real del `get/accepted`.
+  - Con el firmware 0.3.0, la caja arranca en modo juego. Mientras no esté integrada la partida, en ese modo la cerradura no se abre por voz: hay que pasar a manual o usar el comando Serial `abrir`.
 
 ### Iteración 2 — dom 22
 - **Qué quedó funcionando:**

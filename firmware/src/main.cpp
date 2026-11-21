@@ -1,11 +1,13 @@
 // Caja de los Enigmas - objeto inteligente.
-// Sincroniza su estado con el Device Shadow de AWS IoT Core: mueve el servo de la cerradura
-// segun las ordenes del delta y reporta la cerradura y el codigo de vinculacion.
+// Sincroniza su estado con el Device Shadow de AWS IoT Core (contrato v2): aplica el modo, la
+// dificultad y los parametros que llegan en el delta y los guarda en la NVS, mueve el servo de
+// la cerradura por voz solo en modo manual y reporta el estado completo.
 // Por Serial acepta comandos de prueba (escribir "ayuda").
 
 #include <Arduino.h>
 #include <string.h>
 
+#include "AlmacenParametros.h"
 #include "CerraduraServo.h"
 #include "CodigoVinculacion.h"
 #include "ConexionAwsIot.h"
@@ -13,6 +15,7 @@
 #include "ConfiguracionHardware.h"
 #include "ConsolaSerial.h"
 #include "EstadoShadow.h"
+#include "ParametrosJuego.h"
 
 #if __has_include("ConfiguracionWifi.h")
 #include "ConfiguracionWifi.h"
@@ -28,9 +31,9 @@
 
 namespace {
 
-constexpr char VersionFirmware[] = "0.2.0";
+constexpr char VersionFirmware[] = "0.3.0";
 constexpr unsigned long IntervaloReportePeriodicoMs = 60000UL;  // Respaldo (contratos, sec. 3).
-constexpr size_t TamanoReporte = 256;
+constexpr size_t TamanoReporte = 512;  // El reporte v2 mas largo ocupa unos 370 bytes.
 
 ConexionWifi conexionWifi(NombreRedWifi, ClaveRedWifi);
 ConexionAwsIot conexionAws(conexionWifi, EndpointAwsIot, PuertoAwsIot, NombreThing,
@@ -39,9 +42,11 @@ CerraduraServo cerraduraServo(PinServoCerradura, AnguloCerraduraCerradaGrados,
                               AnguloCerraduraAbiertaGrados);
 CodigoVinculacion codigoVinculacion;
 EstadoShadow estadoShadow(codigoVinculacion.texto(), VersionFirmware);
+AlmacenParametros almacenParametros;
 ConsolaSerial consola;
 
-ConexionAwsIot::MensajeShadow mensajeRecibido;  // Global: 2 KB fuera de la pila de loop().
+ConfiguracionJuego configuracion;               // La vigente; se carga de la NVS al arrancar.
+ConexionAwsIot::MensajeShadow mensajeRecibido;  // Global: 3 KB fuera de la pila de loop().
 unsigned long ultimoReporteMs = 0;
 
 // --- Actuador --------------------------------------------------------------------------------
@@ -57,37 +62,80 @@ void moverCerradura(EstadoCerradura estadoPedido) {
     Serial.println(EstadoShadow::textoCerradura(estadoPedido));
 }
 
+// --- Configuracion del juego -----------------------------------------------------------------
+
+void mostrarConfiguracion() {
+    Serial.print(F("Configuracion: modo="));
+    Serial.print(EstadoShadow::textoModo(configuracion.modo));
+    Serial.print(F(" dificultad="));
+    Serial.print(ParametrosJuego::textoDificultad(configuracion.dificultad));
+    Serial.print(F(" distanciaObjetivoCm="));
+    Serial.print(configuracion.distanciaObjetivoCm);
+    Serial.print(F(" umbralLuzPorcentaje="));
+    Serial.println(configuracion.umbralLuzPorcentaje);
+}
+
+void cargarConfiguracionGuardada() {
+    configuracion = almacenParametros.cargarConfiguracion();
+    estadoShadow.establecerConfiguracion(configuracion);
+    estadoShadow.establecerPartida(EstadoPartida::Esperando, NombreSinDesafio,
+                                   almacenParametros.cargarIdPartida(),
+                                   almacenParametros.cargarSolicitudPartida());
+    mostrarConfiguracion();
+}
+
 // --- Ordenes del Shadow ----------------------------------------------------------------------
 
-void aplicarOrdenCerradura(const OrdenCerradura& orden) {
-    if (!orden.estaPresente) {
+void aplicarConfiguracion(const OrdenesShadow& ordenes) {
+    const ConfiguracionJuego nueva = ordenes.aplicarA(configuracion);
+    if (nueva == configuracion) {
         return;
     }
-    if (!orden.esValida) {
-        // Contrato: no mover nada y volver a reportar el estado real.
-        Serial.println(F("Orden: valor de cerradura invalido; se reporta el estado real."));
-        estadoShadow.solicitarReporte();
+    configuracion = nueva;
+    almacenParametros.guardarConfiguracion(configuracion);
+    estadoShadow.establecerConfiguracion(configuracion);
+    mostrarConfiguracion();
+}
+
+void aplicarOrdenCerradura(const OrdenesShadow& ordenes) {
+    if (!ordenes.cerradura.esValida) {
+        return;
+    }
+    if (!ordenes.pideMoverCerradura(configuracion)) {
+        Serial.println(F("Orden: en modo juego la cerradura la mueve el juego; se ignora."));
         return;
     }
     Serial.print(F("Orden del Shadow: "));
-    moverCerradura(orden.estadoPedido);
-    // Reportar aunque ya estuviera asi: el delta indica que la nube tiene otro valor.
+    moverCerradura(ordenes.cerradura.valorPedido);
+}
+
+void aplicarOrdenes(const OrdenesShadow& ordenes) {
+    if (!ordenes.hayAlgunaPresente()) {
+        return;
+    }
+    if (ordenes.hayAlgunaInvalida()) {
+        // Contrato: los valores invalidos no cambian nada; se reporta el estado real.
+        Serial.println(F("Orden: hay valores invalidos en el delta; se ignoran."));
+    }
+    aplicarConfiguracion(ordenes);  // Primero: el modo nuevo decide si se obedece la cerradura.
+    aplicarOrdenCerradura(ordenes);
+    // Reportar aunque nada cambie: el delta indica que la nube tiene otros valores.
     estadoShadow.solicitarReporte();
 }
 
 void procesarMensaje(const ConexionAwsIot::MensajeShadow& mensaje) {
-    OrdenCerradura orden;
+    OrdenesShadow ordenes;
     bool sePudoLeer = false;
     if (mensaje.tipo == ConexionAwsIot::TipoMensaje::Delta) {
-        sePudoLeer = EstadoShadow::leerOrdenDelta(mensaje.contenido, orden);
+        sePudoLeer = EstadoShadow::leerOrdenesDelta(mensaje.contenido, ordenes);
     } else {
-        sePudoLeer = EstadoShadow::leerOrdenDocumentoCompleto(mensaje.contenido, orden);
+        sePudoLeer = EstadoShadow::leerOrdenesDocumentoCompleto(mensaje.contenido, ordenes);
     }
     if (!sePudoLeer) {
         Serial.println(F("Shadow: mensaje con JSON invalido; se ignora."));
         return;
     }
-    aplicarOrdenCerradura(orden);
+    aplicarOrdenes(ordenes);
 }
 
 // --- Reportes --------------------------------------------------------------------------------
@@ -120,7 +168,8 @@ void solicitarReportePeriodico() {
 
 void mostrarAyuda() {
     Serial.println(F("Comandos: abrir, cerrar, estado, codigo, ayuda."));
-    Serial.println(F("Con conexion a AWS, el desired del Shadow manda: puede revertir abrir/cerrar."));
+    Serial.println(F("abrir y cerrar mueven el servo en cualquier modo, para probar el montaje."));
+    Serial.println(F("En modo manual, el desired del Shadow manda: puede revertir abrir/cerrar."));
 }
 
 void mostrarEstado() {
@@ -128,6 +177,7 @@ void mostrarEstado() {
     Serial.print(EstadoShadow::textoCerradura(estadoShadow.cerradura()));
     Serial.print(F(" aws="));
     Serial.println(conexionAws.estaConectada() ? F("conectado") : F("desconectado"));
+    mostrarConfiguracion();
 }
 
 void ejecutarComando(const char* comando) {
@@ -160,6 +210,7 @@ void setup() {
 
     cerraduraServo.iniciar();  // Arranca cerrada.
     estadoShadow.establecerCerradura(EstadoCerradura::Cerrada);
+    cargarConfiguracionGuardada();
 
     codigoVinculacion.iniciar();
     Serial.print(F("Vinculacion: codigo de esta caja = "));

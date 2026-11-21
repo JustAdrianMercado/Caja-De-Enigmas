@@ -83,3 +83,40 @@ bool ParametrosJuego::leerDificultad(const char* texto, Dificultad& dificultad) 
     }
     return false;
 }
+
+ParametrosJuego ConfiguracionJuego::parametros() const {
+    return ParametrosJuego::armar(dificultad, distanciaObjetivoCm, umbralLuzPorcentaje);
+}
+
+bool ConfiguracionJuego::aceptaOrdenesDeCerradura() const {
+    return modo == ModoCaja::Manual;
+}
+
+ConfiguracionJuego ConfiguracionJuego::desdeValoresGuardados(uint8_t modo, uint8_t dificultad,
+                                                             uint8_t distanciaObjetivoCm,
+                                                             uint8_t umbralLuzPorcentaje) {
+    ConfiguracionJuego configuracion;  // Arranca con los valores de fabrica.
+    if (modo <= static_cast<uint8_t>(ModoCaja::Manual)) {
+        configuracion.modo = static_cast<ModoCaja>(modo);
+    }
+    if (dificultad <= static_cast<uint8_t>(Dificultad::Dificil)) {
+        configuracion.dificultad = static_cast<Dificultad>(dificultad);
+    }
+    if (ParametrosJuego::esDistanciaObjetivoValida(distanciaObjetivoCm)) {
+        configuracion.distanciaObjetivoCm = distanciaObjetivoCm;
+    }
+    if (ParametrosJuego::esUmbralLuzValido(umbralLuzPorcentaje)) {
+        configuracion.umbralLuzPorcentaje = umbralLuzPorcentaje;
+    }
+    return configuracion;
+}
+
+bool operator==(const ConfiguracionJuego& una, const ConfiguracionJuego& otra) {
+    return una.modo == otra.modo && una.dificultad == otra.dificultad &&
+           una.distanciaObjetivoCm == otra.distanciaObjetivoCm &&
+           una.umbralLuzPorcentaje == otra.umbralLuzPorcentaje;
+}
+
+bool operator!=(const ConfiguracionJuego& una, const ConfiguracionJuego& otra) {
+    return !(una == otra);
+}
