@@ -1,4 +1,5 @@
-// Pruebas de ParametrosJuego en la PC: tabla de dificultades, rangos y textos del contrato.
+// Pruebas de ParametrosJuego y ConfiguracionJuego en la PC: tabla de dificultades, rangos,
+// textos del contrato y valores leidos de la NVS.
 // Ejecutar desde firmware/: pio test -e pruebas
 
 #include <unity.h>
@@ -94,6 +95,61 @@ void test_leer_dificultad_rechaza_otros_textos_sin_cambiar_nada() {
     TEST_ASSERT_TRUE(dificultad == Dificultad::Dificil);
 }
 
+// --- ConfiguracionJuego --------------------------------------------------------------------
+
+void test_configuracion_de_fabrica_es_modo_juego_normal_20_cm_y_70_por_ciento() {
+    const ConfiguracionJuego configuracion;
+    TEST_ASSERT_TRUE(configuracion.modo == ModoCaja::Juego);
+    TEST_ASSERT_TRUE(configuracion.dificultad == Dificultad::Normal);
+    TEST_ASSERT_EQUAL_UINT8(20, configuracion.distanciaObjetivoCm);
+    TEST_ASSERT_EQUAL_UINT8(70, configuracion.umbralLuzPorcentaje);
+}
+
+void test_parametros_de_la_configuracion_usan_la_tabla_y_la_calibracion() {
+    ConfiguracionJuego configuracion;
+    configuracion.dificultad = Dificultad::Facil;
+    configuracion.distanciaObjetivoCm = 30;
+    configuracion.umbralLuzPorcentaje = 60;
+    const ParametrosJuego parametros = configuracion.parametros();
+    TEST_ASSERT_EQUAL_UINT8(3, parametros.longitudSecuencia);
+    TEST_ASSERT_EQUAL_UINT8(6, parametros.toleranciaCm);
+    TEST_ASSERT_EQUAL_UINT8(30, parametros.distanciaObjetivoCm);
+    TEST_ASSERT_EQUAL_UINT8(60, parametros.umbralLuzPorcentaje);
+}
+
+void test_solo_el_modo_manual_acepta_ordenes_de_cerradura() {
+    ConfiguracionJuego configuracion;
+    TEST_ASSERT_FALSE(configuracion.aceptaOrdenesDeCerradura());
+    configuracion.modo = ModoCaja::Manual;
+    TEST_ASSERT_TRUE(configuracion.aceptaOrdenesDeCerradura());
+}
+
+void test_valores_guardados_validos_se_recuperan() {
+    const ConfiguracionJuego configuracion =
+        ConfiguracionJuego::desdeValoresGuardados(1, 2, 35, 90);
+    TEST_ASSERT_TRUE(configuracion.modo == ModoCaja::Manual);
+    TEST_ASSERT_TRUE(configuracion.dificultad == Dificultad::Dificil);
+    TEST_ASSERT_EQUAL_UINT8(35, configuracion.distanciaObjetivoCm);
+    TEST_ASSERT_EQUAL_UINT8(90, configuracion.umbralLuzPorcentaje);
+}
+
+void test_cada_valor_guardado_invalido_vuelve_al_de_fabrica() {
+    const ConfiguracionJuego configuracion =
+        ConfiguracionJuego::desdeValoresGuardados(7, 2, 255, 90);
+    TEST_ASSERT_TRUE(configuracion.modo == ModoCaja::Juego);           // 7 no es un modo.
+    TEST_ASSERT_TRUE(configuracion.dificultad == Dificultad::Dificil);  // Valido: se conserva.
+    TEST_ASSERT_EQUAL_UINT8(DistanciaObjetivoPorDefectoCm, configuracion.distanciaObjetivoCm);
+    TEST_ASSERT_EQUAL_UINT8(90, configuracion.umbralLuzPorcentaje);
+}
+
+void test_comparar_configuraciones() {
+    ConfiguracionJuego una;
+    ConfiguracionJuego otra;
+    TEST_ASSERT_TRUE(una == otra);
+    otra.umbralLuzPorcentaje = 71;
+    TEST_ASSERT_TRUE(una != otra);
+}
+
 int main() {
     UNITY_BEGIN();
     RUN_TEST(test_facil_usa_secuencia_de_3_y_tolerancia_de_6_cm);
@@ -108,5 +164,11 @@ int main() {
     RUN_TEST(test_texto_de_cada_dificultad_es_el_del_contrato);
     RUN_TEST(test_leer_dificultad_acepta_los_tres_textos_del_contrato);
     RUN_TEST(test_leer_dificultad_rechaza_otros_textos_sin_cambiar_nada);
+    RUN_TEST(test_configuracion_de_fabrica_es_modo_juego_normal_20_cm_y_70_por_ciento);
+    RUN_TEST(test_parametros_de_la_configuracion_usan_la_tabla_y_la_calibracion);
+    RUN_TEST(test_solo_el_modo_manual_acepta_ordenes_de_cerradura);
+    RUN_TEST(test_valores_guardados_validos_se_recuperan);
+    RUN_TEST(test_cada_valor_guardado_invalido_vuelve_al_de_fabrica);
+    RUN_TEST(test_comparar_configuraciones);
     return UNITY_END();
 }

@@ -2,9 +2,13 @@
 
 #include <stdint.h>
 
-// Parametros del juego, tabla de dificultades y rangos validos (docs/contratos.md, seccion 2).
-// Logica pura, sin Arduino: se prueba en la PC (firmware/test/test_parametros_juego).
+#include "TiposCaja.h"
 
+// Parametros y configuracion del juego, tabla de dificultades y rangos validos
+// (docs/contratos.md, seccion 2). Logica pura, sin Arduino: se prueba en la PC
+// (firmware/test/test_parametros_juego).
+
+// La NVS guarda el numero de cada valor: no cambiar el orden, solo agregar al final.
 enum class Dificultad : uint8_t { Facil, Normal, Dificil };
 
 // Rangos que acepta el contrato para los parametros que se cambian por voz.
@@ -49,3 +53,28 @@ struct ParametrosJuego {
     // Devuelve false y no cambia la dificultad si el texto no es uno de esos tres.
     static bool leerDificultad(const char* texto, Dificultad& dificultad);
 };
+
+/**
+ * Lo que se cambia por voz y se guarda en la NVS: el modo, la dificultad y la calibracion.
+ * De aca salen los ParametrosJuego con los que empieza cada desafio.
+ */
+struct ConfiguracionJuego {
+    ModoCaja modo = ModoCaja::Juego;
+    Dificultad dificultad = DificultadPorDefecto;
+    uint8_t distanciaObjetivoCm = DistanciaObjetivoPorDefectoCm;
+    uint8_t umbralLuzPorcentaje = UmbralLuzPorDefectoPorcentaje;
+
+    ParametrosJuego parametros() const;
+
+    // Contrato, seccion 9.1: las ordenes de voz sobre la cerradura solo valen en modo manual.
+    bool aceptaOrdenesDeCerradura() const;
+
+    // Arma la configuracion con lo leido de la NVS. Cada valor invalido (NVS vacia o con
+    // datos de otra version) se reemplaza por el de fabrica, sin tocar los demas.
+    static ConfiguracionJuego desdeValoresGuardados(uint8_t modo, uint8_t dificultad,
+                                                    uint8_t distanciaObjetivoCm,
+                                                    uint8_t umbralLuzPorcentaje);
+};
+
+bool operator==(const ConfiguracionJuego& una, const ConfiguracionJuego& otra);
+bool operator!=(const ConfiguracionJuego& una, const ConfiguracionJuego& otra);
