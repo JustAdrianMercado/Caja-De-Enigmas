@@ -102,7 +102,7 @@ Llenar al cerrar cada iteración, con lo que **de verdad** quedó hecho. Si un c
 - **Archivos, commits y PR:**
   - nuevos: `firmware/include/Desafio.h`, `firmware/include/ParametrosJuego.h`, `firmware/src/ParametrosJuego.cpp` y `firmware/test/test_parametros_juego/`;
   - cambiados: `EstadoShadow.*`, `main.cpp`, `test_estado_shadow`, `firmware/platformio.ini` (`ParametrosJuego.cpp` en el entorno `pruebas`), `config/aws/politica-iot.json` y `docs/contratos.md` (sección 10);
-  - rama `feat/firmware-aws-p4`; PR: pendiente.
+  - rama `feat/firmware-aws-p4`, PR #6.
 - **Decisiones y por qué:**
   - **`detener()` en la interfaz:** sin él, al pasar a modo manual o reiniciar una partida, un LED del desafío en curso podía quedar encendido.
   - **`Superado` y `Fallado` son finales** hasta el próximo `iniciar()`: así `PartidaEnigmas` lee el resultado sin que cambie entre dos vueltas de `loop()`.
