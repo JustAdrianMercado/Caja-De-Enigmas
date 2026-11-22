@@ -25,7 +25,7 @@ class TestSesionYErrores(unittest.TestCase):
 
     def test_help_explica_vinculacion_consultas_y_control(self):
         respuesta = self.solicitar("AMAZON.HelpIntent")
-        for palabra in ("vincular", "cuatro dígitos", "tapa", "cerradura",
+        for palabra in ("vincular", "cuatro dígitos", "progreso", "cerradura",
                         "abrir", "cerrar", "desvincular", "cambiar"):
             self.assertIn(palabra, voz(respuesta))
         self.assertFalse(respuesta["response"]["shouldEndSession"])

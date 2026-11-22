@@ -17,6 +17,7 @@ class TestCerradura(unittest.TestCase):
         self.registro = MagicMock(spec=ServicioRegistro)
         self.shadow = MagicMock(spec=ServicioShadow)
         self.repo.obtener.return_value = {"thingName": "caja-enigmas-01"}
+        self.shadow.leer_modo.return_value = "manual"
         self.shadow.leer_estado.return_value = {
             "reported": {"cerradura": "cerrada"},
         }

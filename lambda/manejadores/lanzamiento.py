@@ -28,8 +28,8 @@ class LaunchRequestHandler(AbstractRequestHandler):
             mensaje = (
                 "Bienvenido a Caja de los Enigmas. "
                 f"Tu caja {thing_name} está vinculada. "
-                "Puedes consultar la tapa o controlar "
-                "la cerradura."
+                "Puedes iniciar una partida, consultar el progreso "
+                "o cambiar el modo y los parámetros."
             )
         else:
             mensaje = (

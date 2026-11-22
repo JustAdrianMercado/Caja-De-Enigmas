@@ -28,6 +28,20 @@ class CambiarCerraduraIntentHandler(AbstractRequestHandler):
             if not vinculacion:
                 mensaje = SIN_VINCULACION
             else:
+                modo = self.shadow.leer_modo(vinculacion["thingName"])
+                if modo == "juego":
+                    return (
+                        handler_input.response_builder.speak(
+                            "La caja está en modo juego: hay que resolver "
+                            "los desafíos o pasarla a modo manual."
+                        ).ask(REPREGUNTA).response
+                    )
+                if modo != "manual":
+                    return (
+                        handler_input.response_builder.speak(
+                            "No tengo un modo manual confirmado en el reporte."
+                        ).ask(REPREGUNTA).response
+                    )
                 self.shadow.pedir_cerradura(
                     vinculacion["thingName"], self.estado
                 )

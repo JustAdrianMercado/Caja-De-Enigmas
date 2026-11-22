@@ -8,8 +8,10 @@ SIN_VINCULACION = (
 REPREGUNTA = "¿Qué deseas hacer?"
 AYUDA = (
     "Puedes vincular tu caja indicando su número y su código de cuatro "
-    "dígitos. Después puedes consultar la tapa o la cerradura, abrir o "
-    "cerrar la cerradura y desvincular tu caja. "
+    "dígitos. Después puedes iniciar una partida, pedir pistas, consultar "
+    "el progreso, el modo, los parámetros o la cerradura y cambiar el modo, "
+    "la dificultad y los parámetros. En modo manual puedes abrir o cerrar "
+    "la cerradura. También puedes desvincular tu caja. "
     "Para cambiar de caja, vincula la nueva con su número y código."
 )
 ERROR_GENERAL = (

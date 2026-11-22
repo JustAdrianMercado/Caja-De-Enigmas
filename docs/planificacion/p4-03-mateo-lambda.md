@@ -57,6 +57,54 @@ Además:
 
 **Listo cuando:** los ejemplos válidos quedan en la tabla, los inválidos no, y los tests pasan.
 
+### Orden de implementación local de la iteración 1
+
+Plan pendiente de ejecutar, basado en el contrato v2 (§§2, 3.2, 5.2 y 6).
+Se limita a `lambda-almacenamiento/**`; no modifica Alexa, firmware ni vigilancia.
+
+1. **Validación (`validacion.py`).** Distinguir lecturas (`tipo = lectura`)
+   de eventos (`tipoMensaje = evento`, conservando en `tipo` el nombre del
+   evento). Validar `thingName` y `tsRegla` recibidos de las reglas; no derivar
+   la caja de un campo del payload original. Usar el SQL del contrato §6,
+   que prevalece sobre los fragmentos de la iteración 0 de este plan.
+   - Lecturas: al menos `distanciaCm` (entero 2–400) o `luzPorcentaje`
+     (entero 0–100); admitir solo luz y guardar también lecturas sin cambios.
+   - Eventos: los seis tipos y sus campos obligatorios específicos de §3.2.
+     Validar enums y rangos: `idPartida >= 1`, `duracionMs` 0–3 600 000,
+     `intentos` 1–99, según corresponda. Rechazar booleanos como enteros.
+   - Si viene `tsObjeto`, validar ISO-8601 UTC con milisegundos. Registrar
+     motivos de descarte acotados, sin volcar payloads ni datos privados.
+2. **Enriquecimiento (`enriquecimiento.py`).** Construir el ítem mediante
+   una lista explícita de campos permitidos. Usar `tsObjeto` si existe y,
+   en su ausencia, convertir `tsRegla` (epoch ms) a UTC con milisegundos.
+   Formar `ts = <fecha>#lectura` o `<fecha>#<nombre del evento>`.
+   En eventos guardar `tipo = evento` y `evento = <tipo original>`.
+   Conservar `tsRegla` y, si vino, `tsObjeto`; incorporar `tsGuardado`
+   (epoch ms) al escribir y `expiraEn` (epoch s, a 30 días) solo en lecturas.
+   No agregar `categoriaAlerta` a lecturas ni eventos: el GSI es disperso.
+3. **Persistencia (`servicios/repositorio_historico.py`).** Encapsular
+   `PutItem` con tabla y reloj inyectables. No necesitar `DescribeTable`
+   para procesar mensajes. Propagar errores de escritura sin convertirlos
+   en confirmaciones de persistencia; separar esos errores de los descartes
+   por validación. No cambiar las claves acordadas para resolver colisiones
+   sin consultar al grupo y actualizar el contrato.
+4. **Composición (`lambda_function.py`).** Conectar validación,
+   enriquecimiento y repositorio; leer `TABLA_HISTORICO` y
+   `DIAS_RETENCION_LECTURAS`. Mantener una entrada de prueba con dependencias
+   falsas que no inicialice clientes AWS ni consulte credenciales.
+5. **Pruebas locales con pytest (`tests/`).** Cubrir cada tipo válido,
+   campos faltantes, tipos incorrectos, límites y enums inválidos;
+   timestamps con y sin `tsObjeto`, TTL exclusivo de lecturas y separación
+   `tipo`/`evento`. Usar una tabla falsa y un reloj fijo para comprobar que
+   cada inválido produce cero escrituras y que los válidos llegan a `PutItem`.
+   Incluir lecturas repetidas, errores del repositorio y la colisión de
+   igual caja, timestamp y tipo bajo la clave actual. Ejecutar las pruebas
+   y registrar resultados reales antes de declarar terminada la parte local.
+6. **Preparación de integración.** Actualizar README y ejemplos; preparar
+   el paquete local sin desplegar. Dejar para una actuación manual posterior
+   la carga en AWS y la comprobación de válidos e inválidos en DynamoDB.
+   La parte local no acredita por sí sola el cierre completo de iteración 1.
+
 ## Iteración 2 — dom 22: intents nuevos de la skill
 
 **Servicio:** ampliar `ServicioShadow` ([lambda/servicios/servicio_shadow.py](../../lambda/servicios/servicio_shadow.py)) con métodos que escriban en `desired`: `pedir_modo`, `pedir_dificultad`, `pedir_parametro` y `pedir_partida`. Este último incrementa `solicitudPartida`.
@@ -112,14 +160,48 @@ En `INFORME_P4.md`:
 Llenar al cerrar cada iteración, con lo que **de verdad** quedó hecho. Si un campo no aplica, "—". Qué va en cada campo y a qué sección del informe alimenta: [p4-00-resumen.md](p4-00-resumen.md#registro-de-lo-aplicado-en-cada-iteración).
 
 ### Iteración 0 — vie 20
-- **Qué quedó funcionando:**
-- **Archivos, commits y PR:**
-- **Decisiones y por qué:**
-- **Configuración en AWS (sin secretos):**
-- **Pruebas y valores medidos:**
-- **Evidencias:**
-- **Cambios al contrato o al plan:**
-- **Problemas y pendientes:**
+- **Qué quedó funcionando:** según lo reportado por Mateo, la Lambda mínima
+  `caja-enigmas-almacenamiento` fue creada y desplegada con Python 3.12 en
+  `us-east-1`. Las reglas `CajaEnigmasLecturas` y `CajaEnigmasEventos` fueron
+  creadas y probadas mediante MQTT y CloudWatch. La recepción no persiste
+  mensajes en DynamoDB.
+- **Archivos, commits y PR:** exportaciones JSON de recursos AWS pendientes
+  de obtener realmente: `config/aws/tabla-historico.json`, las dos reglas
+  en `config/aws/reglas/` y `config/aws/politica-rol-almacenamiento.json`.
+  No se consignan commits ni PR como evidencia de este reporte.
+- **Decisiones y por qué:** se documenta la configuración manual reportada;
+  no se atribuyen decisiones ni justificaciones adicionales no suministradas.
+- **Configuración en AWS (sin secretos):** reportada por Mateo en `us-east-1`:
+  - Tabla `CajaEnigmasHistorico`, PK `thingName` (String), SK `ts` (String),
+    capacidad bajo demanda.
+  - GSI `alertas-por-fecha`, PK `categoriaAlerta` (String), SK `ts` (String),
+    proyección `ALL`.
+  - TTL sobre `expiraEn` activado.
+  - Rol de almacenamiento con permisos de CloudWatch y política inline
+    `CajaEnigmasHistoricoEscritura` con `dynamodb:PutItem` y
+    `dynamodb:DescribeTable`.
+  - Lambda y las dos reglas indicadas en «Qué quedó funcionando».
+- **Pruebas y valores medidos:** según el reporte, ambas reglas se probaron
+  mediante MQTT y CloudWatch. En la prueba de eventos, el registro mostró
+  `thingName = caja-enigmas-02`, `tipoMensaje = evento`,
+  `tipo = desafio_superado` y `persistido = false`. No se reportan cantidades
+  de ejecuciones, latencias ni resultados de escritura en DynamoDB.
+- **Evidencias:** Mateo refiere capturas o logs de respaldo de los hechos
+  anteriores. Este registro transcribe su reporte; no constituye una revisión
+  directa de AWS ni una inspección independiente de esas capturas o logs.
+  Pendiente incorporar o enlazar los respaldos reales en el repositorio;
+  no se inventan nombres de archivo, rutas ni identificadores de registros.
+- **Cambios al contrato o al plan:** no se modifica el contrato. El permiso
+  `dynamodb:DescribeTable` reportado es adicional al mínimo del contrato §6
+  (logs y `dynamodb:PutItem`); queda pendiente justificarlo o que una persona
+  ajuste manualmente el rol. No se afirma que se haya hecho ese ajuste.
+- **Problemas y pendientes:** el criterio funcional de recepción de la
+  iteración 0 se considera cubierto según el reporte de Mateo. Para el cierre
+  formal faltan las exportaciones JSON reales, la incorporación o enlaces de
+  las evidencias y la revisión documentada de los permisos frente al contrato.
+  El SQL exacto y los permisos basados en recursos podrán contrastarse con
+  las configuraciones reales; no se declaran verificados por este reporte.
+  La validación y persistencia completas pertenecen a la iteración 1.
 
 ### Iteración 1 — sáb 21
 - **Qué quedó funcionando:**
