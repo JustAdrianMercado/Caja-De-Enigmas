@@ -1,0 +1,29 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CrearSuGrupoDeLogs",
+      "Effect": "Allow",
+      "Action": "logs:CreateLogGroup",
+      "Resource": "arn:aws:logs:us-east-1:977308215256:*"
+    },
+    {
+      "Sid": "EscribirSusLogs",
+      "Effect": "Allow",
+      "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+      "Resource": "arn:aws:logs:us-east-1:977308215256:log-group:/aws/lambda/caja-enigmas-vigilancia:*"
+    },
+    {
+      "Sid": "ListarLasCajas",
+      "Effect": "Allow",
+      "Action": "iot:ListThings",
+      "Resource": "*"
+    },
+    {
+      "Sid": "LeerYGuardarEnElHistorico",
+      "Effect": "Allow",
+      "Action": ["dynamodb:Query", "dynamodb:PutItem"],
+      "Resource": "arn:aws:dynamodb:us-east-1:977308215256:table/CajaEnigmasHistorico"
+    }
+  ]
+}

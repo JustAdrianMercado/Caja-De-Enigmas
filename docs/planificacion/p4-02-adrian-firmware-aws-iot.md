@@ -169,15 +169,58 @@ Llenar al cerrar cada iteración, con lo que **de verdad** quedó hecho. Si un c
   - Falta probarlo en la placa con Santiago: la NVS, el `delta` v2 y el tamaño real del `get/accepted`.
   - Con el firmware 0.3.0, la caja arranca en modo juego. Mientras no esté integrada la partida, en ese modo la cerradura no se abre por voz: hay que pasar a manual o usar el comando Serial `abrir`.
 
-### Iteración 2 — dom 22
-- **Qué quedó funcionando:**
+### Iteración 2 — dom 22 (terminada el lun 23)
+- **Qué quedó funcionando** (compila y pasa los tests; **todavía no se probó en la placa ni en AWS**):
+  - **Eventos:**
+    - `EventoJson` arma el JSON del contrato, solo con los campos de cada tipo;
+    - `RelojUtc` da el `tsObjeto`;
+    - `ColaEventos` guarda 20 eventos, descarta el más viejo si se llena y descarta un evento rechazado 3 veces;
+    - `ConexionAwsIot::publicarEvento` publica en el tema de eventos.
+  - **Firmware 0.4.0 en `main.cpp`:**
+    - partida integrada con los desafíos de Santiago, el pulsador de inicio y el inicio por voz;
+    - `idPartida` y `solicitudPartida` guardados en la NVS;
+    - lecturas de distancia y luz en el reporte;
+    - todos los eventos pasan por la cola;
+    - comando Serial `iniciar`.
+  - **Lambda `caja-enigmas-vigilancia`**, con tests, el script de empaquetado y un README con los pasos de consola. La política del rol y la regla de EventBridge están en `config/aws/`.
+  - **Borrador de mis secciones del informe** en [docs/informe-p4-adrian.md](../informe-p4-adrian.md), para que Lucía las integre a `INFORME_P4.md`.
 - **Archivos, commits y PR:**
+  - nuevos: `EventoJson.*`, `RelojUtc.*`, `ColaEventos.*`, `firmware/test/test_evento_json/`, `firmware/test/test_cola_eventos/`, `lambda-vigilancia/**`, `config/aws/politica-rol-vigilancia.json`, `config/aws/regla-vigilancia.json` y `docs/informe-p4-adrian.md`;
+  - cambiados: `main.cpp`, `ConexionAwsIot.*`, `firmware/platformio.ini` y `docs/contratos.md` (secciones 3.3, 6 y 9.3);
+  - rama `feat/firmware-aws-p4-it2`, PR #10.
 - **Decisiones y por qué:**
-- **Configuración en AWS (sin secretos):**
+  - **Todos los eventos pasan por la cola, haya red o no**, así se publican siempre en orden. Sale uno por vuelta de `loop()`, porque cada publicación QoS 1 espera el PUBACK.
+  - **El JSON se arma en el momento del evento**, así `tsObjeto` es la hora real y no la de la reconexión.
+  - **Cada tipo lleva solo sus campos**, porque la Lambda de Mateo valida todos los campos que llegan.
+  - **Un evento rechazado 3 veces se descarta.** Sin el permiso de la política, AWS corta la conexión en cada intento, y sin este límite la caja se reconectaría sin fin.
+  - **`main.cpp` no mide la distancia mientras corre ese desafío**, porque `SensorDistancia::actualizar()` entrega cada medición una sola vez.
+  - **Vigilancia:**
+    - solo cuentan las lecturas;
+    - la alerta no se repite;
+    - una caja que nunca reportó genera su alerta sin `ultimaLectura`;
+    - busca con `FilterExpression` en páginas de 25, con un tope de 40 páginas;
+    - no usa el GSI, y `ListThings` va con `*` porque no admite permisos por recurso;
+    - no escribe en `desired`, porque no actúa sobre un objeto apagado (la justificación está en el informe).
+- **Configuración en AWS (sin secretos):** el rol, la función y la regla están preparados en `config/aws/` y en `lambda-vigilancia/README.md`. **Falta crearlos en la consola.**
 - **Pruebas y valores medidos:**
-- **Evidencias:**
+  - `pio test -e pruebas`: 89 de 89;
+  - `python -m unittest discover -s tests` en `lambda-vigilancia/`: 20 de 20;
+  - `pio run -e caja`: compila, con 18,8 % de RAM y 73,0 % de Flash;
+  - el ZIP de la vigilancia contiene solo los 5 archivos de producción.
+- **Evidencias:** —
 - **Cambios al contrato o al plan:**
+  - 3.3: un evento por vuelta, y descarte tras 3 rechazos.
+  - 6: el rol de la vigilancia no necesita el GSI.
+  - 9.3: el formato del ítem de alerta, y que solo cuentan las lecturas.
 - **Problemas y pendientes:**
+  - Probar con Santiago en la placa: la partida completa, los eventos en el tema y la NVS.
+  - En la consola:
+    - aplicar `PublicarSusEventos`, porque sin ese permiso los eventos se pierden después de 3 intentos;
+    - borrar el `reported.tapa` viejo;
+    - crear la vigilancia.
+  - Para que los eventos se guarden hace falta el PR #9 de Mateo (la tabla y la Lambda de almacenamiento).
+  - `SensorLuz` usa la calibración por defecto (ADC de 0 a 4095), y Santiago tiene que fijar la real.
+  - Si hay WiFi pero AWS no responde, cada intento de conexión TLS frena `loop()` varios segundos. Viene de la P3, y no afecta la prueba de cortar el WiFi.
 
 ### Iteración 3 — lun 23
 - **Qué quedó funcionando:**
