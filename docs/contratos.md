@@ -141,7 +141,8 @@ Tema: `caja-enigmas/<thingName>/eventos`. Lo publican el ESP32 y, solo para las 
 - **Periódico de respaldo:** reporte completo del Shadow cada **60 s**, con las lecturas `distanciaCm` y `luzPorcentaje`. Las lecturas también se reportan en cada cambio de desafío.
 - **Sin conexión:**
   - el juego sigue funcionando;
-  - los eventos se guardan en una cola de **20 eventos** y se publican en orden al reconectar; si la cola se llena, se descarta el más viejo;
+  - los eventos se guardan en una cola de **20 eventos** y se publican en orden al reconectar, uno por vuelta de `loop()`; si la cola se llena, se descarta el más viejo;
+  - si AWS rechaza el mismo evento 3 veces con la caja conectada (por ejemplo, porque falta el permiso en la política), se descarta y se cuenta, para que no trabe la cola;
   - las lecturas sin conexión no se guardan, porque solo interesa la actual.
 - **Justificación:** el juego produce eventos discretos que se reportan de inmediato. El respaldo de 60 s mantiene el Shadow vigente y da una serie de lecturas con unos 1 440 mensajes por día y por caja. La estimación de costo completa va en el informe.
 
@@ -203,7 +204,7 @@ Para `ts` se usa `tsObjeto` si vino en el mensaje y, si no, `tsRegla`.
 |---|---|---|---|---|---|
 | `caja-enigmas-skill` | `lambda/` | Alexa Skills Kit, con verificación del Skill ID | Backend de la skill. | `caja-enigmas-lambda-rol` ([política](../config/aws/politica-rol-lambda.json)): los de la v1, más `iot:Publish` sobre `caja-enigmas/*/eventos` (pistas). | `TABLA_VINCULACIONES=CajaEnigmasVinculaciones`, `PREFIJO_THING=caja-enigmas-`, `IOT_ENDPOINT`. |
 | `caja-enigmas-almacenamiento` | `lambda-almacenamiento/` | Reglas `CajaEnigmasLecturas` y `CajaEnigmasEventos` | Valida tipos y rangos (secciones 2 y 3.2), descarta los mensajes inválidos registrando el motivo, enriquece (`thingName`, `ts`, `tsGuardado`, `expiraEn`) y guarda. | `caja-enigmas-almacenamiento-rol`: `dynamodb:PutItem` sobre `CajaEnigmasHistorico` y los logs. | `TABLA_HISTORICO=CajaEnigmasHistorico`, `DIAS_RETENCION_LECTURAS=30`. |
-| `caja-enigmas-vigilancia` | `lambda-vigilancia/` | Regla programada de EventBridge `caja-enigmas-vigilancia-cada-5-min`, `rate(5 minutes)` | Lógica de la Nube: detecta las cajas sin reportar (sección 9.3). | `caja-enigmas-vigilancia-rol`: `iot:ListThings`, y `dynamodb:Query` y `dynamodb:PutItem` sobre `CajaEnigmasHistorico` y su GSI. | `TABLA_HISTORICO=CajaEnigmasHistorico`, `PREFIJO_THING=caja-enigmas-`, `MINUTOS_SIN_REPORTE=15`. |
+| `caja-enigmas-vigilancia` | `lambda-vigilancia/` | Regla programada de EventBridge `caja-enigmas-vigilancia-cada-5-min`, `rate(5 minutes)` | Lógica de la Nube: detecta las cajas sin reportar (sección 9.3). | `caja-enigmas-vigilancia-rol` ([política](../config/aws/politica-rol-vigilancia.json)): `iot:ListThings`, y `dynamodb:Query` y `dynamodb:PutItem` sobre `CajaEnigmasHistorico`. No usa el GSI. | `TABLA_HISTORICO=CajaEnigmasHistorico`, `PREFIJO_THING=caja-enigmas-`, `MINUTOS_SIN_REPORTE=15`. |
 
 Todas usan Python 3.12 en us-east-1.
 
@@ -335,9 +336,12 @@ memoria ──superado──► distancia ──superado──► luz ──supe
 | Caja sin reportar: si la última lectura de una caja tiene más de `MINUTOS_SIN_REPORTE` (15 min), guardar una alerta | Nube (`caja-enigmas-vigilancia`, cada 5 min) | El objeto no puede avisar de su propia desconexión, y se necesita el histórico. |
 
 **Detalles de la regla de la Nube:**
-- La Lambda recorre los Things con el prefijo `caja-enigmas-` (`iot:ListThings`) y busca la última lectura de cada uno (patrón 5).
-- La alerta es un ítem `tipo = alerta`, `categoriaAlerta = sin_reporte`, con `ultimaLectura` y `minutosSinReporte`.
-- No se repite: si el último ítem de la caja ya es una alerta, no se guarda otra hasta que la caja vuelva a reportar.
+- La Lambda recorre los Things con el prefijo `caja-enigmas-` (`iot:ListThings`) y busca la última lectura de cada uno (patrón 5). Solo cuentan las lecturas: un evento, como una pista pedida por voz, no prueba que la caja esté encendida.
+- La alerta es un ítem con:
+  - `ts = "<ISO-8601 UTC con ms>#alerta"`, `tipo = alerta` y `categoriaAlerta = sin_reporte`;
+  - `tsGuardado` (epoch en ms);
+  - `ultimaLectura` (ISO) y `minutosSinReporte`, que se omiten si la caja nunca reportó.
+- No se repite: si lo más nuevo de la caja, entre lecturas y alertas, ya es una alerta, no se guarda otra hasta que la caja vuelva a reportar.
 - `caja-enigmas-02` no tiene placa, así que genera su alerta. Sirve para mostrar la regla en la demo.
 - En el peor caso, la alerta aparece a los 15 + 5 = 20 min.
 - **Para la demo** se puede bajar `MINUTOS_SIN_REPORTE` (p. ej. a 3) y la frecuencia de la regla programada (p. ej. a 1 min) sin tocar el código. Lo que se use en la demo se documenta en el informe.
