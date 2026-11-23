@@ -27,7 +27,7 @@ class TestAuditoria(unittest.TestCase):
     def solicitudes_de_caja(self):
         yield evento_alexa(tipo="LaunchRequest")
         for intent in ("VincularCajaIntent", "DesvincularCajaIntent",
-                       "ConsultarTapaIntent", "ConsultarCerraduraIntent",
+                       "ConsultarProgresoIntent", "ConsultarCerraduraIntent",
                        "AbrirCerraduraIntent", "CerrarCerraduraIntent"):
             yield evento_alexa(intent, slots={
                 "numeroCaja": "1", "codigo": "4821",
@@ -132,7 +132,7 @@ class TestAuditoria(unittest.TestCase):
                     "manejadores.errores", level="ERROR"
                 ) as logs:
                     respuesta = self.invocar(
-                        evento_alexa("ConsultarTapaIntent"), None
+                        evento_alexa("ConsultarProgresoIntent"), None
                     )
                 self.assertIn("No pude completar", voz(respuesta))
                 self.assertNotIn("privado.example", voz(respuesta))

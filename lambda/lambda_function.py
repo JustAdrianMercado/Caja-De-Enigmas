@@ -16,9 +16,15 @@ from manejadores.vincular_caja import VincularCajaIntentHandler
 from manejadores.desvincular_caja import (
     DesvincularCajaIntentHandler
 )
-from manejadores.consultar_tapa import (
-    ConsultarTapaIntentHandler
-)
+from manejadores.iniciar_partida import IniciarPartidaIntentHandler
+from manejadores.pedir_pista import PedirPistaIntentHandler
+from manejadores.consultar_progreso import ConsultarProgresoIntentHandler
+from manejadores.cambiar_modo import CambiarModoIntentHandler
+from manejadores.consultar_modo import ConsultarModoIntentHandler
+from manejadores.cambiar_dificultad import CambiarDificultadIntentHandler
+from manejadores.cambiar_parametro import CambiarParametroIntentHandler
+from manejadores.consultar_parametros import ConsultarParametrosIntentHandler
+from servicios.publicador_eventos import PublicadorEventos
 from manejadores.consultar_cerradura import ConsultarCerraduraIntentHandler
 from manejadores.controlar_cerradura import (
     AbrirCerraduraIntentHandler,
@@ -35,7 +41,8 @@ from manejadores.sesion import (
 
 
 def crear_skill(repositorio, servicio_registro, servicio_shadow,
-                prefijo="caja-enigmas-"):
+                prefijo="caja-enigmas-", publicador_eventos=None,
+                obtener_pista=None):
     """Registra todos los manejadores con servicios reemplazables en tests."""
     skill_builder = SkillBuilder()
     skill_builder.add_request_handler(LaunchRequestHandler(repositorio))
@@ -47,9 +54,16 @@ def crear_skill(repositorio, servicio_registro, servicio_shadow,
     skill_builder.add_request_handler(
         DesvincularCajaIntentHandler(repositorio)
     )
-    skill_builder.add_request_handler(
-        ConsultarTapaIntentHandler(repositorio, servicio_shadow)
-    )
+    for clase in (
+        IniciarPartidaIntentHandler, ConsultarProgresoIntentHandler,
+        CambiarModoIntentHandler, ConsultarModoIntentHandler,
+        CambiarDificultadIntentHandler, CambiarParametroIntentHandler,
+        ConsultarParametrosIntentHandler,
+    ):
+        skill_builder.add_request_handler(clase(repositorio, servicio_shadow))
+    skill_builder.add_request_handler(PedirPistaIntentHandler(
+        repositorio, servicio_shadow, publicador_eventos, obtener_pista
+    ))
     skill_builder.add_request_handler(
         ConsultarCerraduraIntentHandler(repositorio, servicio_shadow)
     )
@@ -93,6 +107,7 @@ repositorio = RepositorioVinculaciones(tabla)
 # 3. Conexion al Device Shadow
 cliente_shadow = None
 servicio_shadow = None
+publicador_eventos = None
 
 if IOT_ENDPOINT:
     cliente_shadow = boto3.client(
@@ -102,6 +117,7 @@ if IOT_ENDPOINT:
     )
 
     servicio_shadow = ServicioShadow(cliente_shadow)
+    publicador_eventos = PublicadorEventos(cliente_shadow)
 
 
 # 4. Conexion al registro de Things
@@ -120,7 +136,11 @@ sb = crear_skill(
     repositorio,
     servicio_registro,
     servicio_shadow,
-    os.environ.get("PREFIJO_THING", "caja-enigmas-")
+    os.environ.get("PREFIJO_THING", "caja-enigmas-"),
+    publicador_eventos=publicador_eventos,
+    # Integrar el contenido de Lucía cuando exista pistas.py y se acuerde
+    # su estructura. No asumir nombres de variables ni inventar pistas.
+    obtener_pista=None,
 )
 # 6. Punto de entrada de AWS Lambda
 lambda_handler = sb.lambda_handler()

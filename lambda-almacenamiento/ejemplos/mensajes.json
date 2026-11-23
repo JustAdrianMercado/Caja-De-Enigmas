@@ -1,0 +1,148 @@
+[
+  {
+    "nombre": "partida_iniciada",
+    "tema": "caja-enigmas/caja-enigmas-01/eventos",
+    "payload": {
+      "tipo": "partida_iniciada",
+      "idPartida": 12,
+      "origen": "edge",
+      "dificultad": "normal"
+    },
+    "entradaLambda": {
+      "tipo": "partida_iniciada",
+      "idPartida": 12,
+      "origen": "edge",
+      "dificultad": "normal",
+      "tipoMensaje": "evento",
+      "thingName": "caja-enigmas-01",
+      "tsRegla": 1795274403120
+    }
+  },
+  {
+    "nombre": "desafio_superado",
+    "tema": "caja-enigmas/caja-enigmas-01/eventos",
+    "payload": {
+      "tipo": "desafio_superado",
+      "idPartida": 12,
+      "desafio": "memoria",
+      "duracionMs": 18450,
+      "intentos": 2,
+      "tsObjeto": "2026-11-21T15:20:03.120Z"
+    },
+    "entradaLambda": {
+      "tipo": "desafio_superado",
+      "idPartida": 12,
+      "desafio": "memoria",
+      "duracionMs": 18450,
+      "intentos": 2,
+      "tsObjeto": "2026-11-21T15:20:03.120Z",
+      "tipoMensaje": "evento",
+      "thingName": "caja-enigmas-01",
+      "tsRegla": 1795274403120
+    }
+  },
+  {
+    "nombre": "desafio_fallado",
+    "tema": "caja-enigmas/caja-enigmas-01/eventos",
+    "payload": {
+      "tipo": "desafio_fallado",
+      "idPartida": 12,
+      "desafio": "memoria"
+    },
+    "entradaLambda": {
+      "tipo": "desafio_fallado",
+      "idPartida": 12,
+      "desafio": "memoria",
+      "tipoMensaje": "evento",
+      "thingName": "caja-enigmas-01",
+      "tsRegla": 1795274403120
+    }
+  },
+  {
+    "nombre": "partida_resuelta",
+    "tema": "caja-enigmas/caja-enigmas-01/eventos",
+    "payload": {
+      "tipo": "partida_resuelta",
+      "idPartida": 12,
+      "duracionMs": 60000
+    },
+    "entradaLambda": {
+      "tipo": "partida_resuelta",
+      "idPartida": 12,
+      "duracionMs": 60000,
+      "tipoMensaje": "evento",
+      "thingName": "caja-enigmas-01",
+      "tsRegla": 1795274403120
+    }
+  },
+  {
+    "nombre": "cerradura",
+    "tema": "caja-enigmas/caja-enigmas-01/eventos",
+    "payload": {
+      "tipo": "cerradura",
+      "cerradura": "abierta",
+      "origen": "edge"
+    },
+    "entradaLambda": {
+      "tipo": "cerradura",
+      "cerradura": "abierta",
+      "origen": "edge",
+      "tipoMensaje": "evento",
+      "thingName": "caja-enigmas-01",
+      "tsRegla": 1795274403120
+    }
+  },
+  {
+    "nombre": "pista",
+    "tema": "caja-enigmas/caja-enigmas-01/eventos",
+    "payload": {
+      "tipo": "pista",
+      "desafio": "distancia",
+      "origen": "voz"
+    },
+    "entradaLambda": {
+      "tipo": "pista",
+      "desafio": "distancia",
+      "origen": "voz",
+      "tipoMensaje": "evento",
+      "thingName": "caja-enigmas-01",
+      "tsRegla": 1795274403120
+    }
+  },
+  {
+    "nombre": "lectura_distancia_y_luz",
+    "tema": "$aws/things/caja-enigmas-01/shadow/update",
+    "payload": {
+      "state": {
+        "reported": {
+          "distanciaCm": 20,
+          "luzPorcentaje": 72
+        }
+      }
+    },
+    "entradaLambda": {
+      "distanciaCm": 20,
+      "luzPorcentaje": 72,
+      "tipo": "lectura",
+      "thingName": "caja-enigmas-01",
+      "tsRegla": 1795274403120
+    }
+  },
+  {
+    "nombre": "lectura_solo_luz",
+    "tema": "$aws/things/caja-enigmas-01/shadow/update",
+    "payload": {
+      "state": {
+        "reported": {
+          "luzPorcentaje": 72
+        }
+      }
+    },
+    "entradaLambda": {
+      "luzPorcentaje": 72,
+      "tipo": "lectura",
+      "thingName": "caja-enigmas-01",
+      "tsRegla": 1795274403120
+    }
+  }
+]
