@@ -56,7 +56,9 @@ bool ConexionAwsIot::armarTemas() {
             return false;
         }
     }
-    return true;
+    const int escritos =
+        snprintf(temaEventos_, TamanoTema, "caja-enigmas/%s/eventos", nombreThing_);
+    return escritos > 0 && static_cast<size_t>(escritos) < TamanoTema;
 }
 
 void ConexionAwsIot::iniciar() {
@@ -215,14 +217,23 @@ void ConexionAwsIot::actualizar() {
 }
 
 bool ConexionAwsIot::publicarActualizacion(const char* documento) {
-    if (!estaConectada() || cadenaVacia(documento)) {
+    return publicar(temaActualizar_, documento);
+}
+
+bool ConexionAwsIot::publicarEvento(const char* json) {
+    return publicar(temaEventos_, json);
+}
+
+bool ConexionAwsIot::publicar(const char* tema, const char* contenido) {
+    if (!estaConectada() || cadenaVacia(contenido)) {
         return false;
     }
-    if (strlen(documento) >= TamanoMensaje) {
-        Serial.println(F("AWS IoT: documento demasiado grande; no se publica."));
+    if (strlen(contenido) >= TamanoMensaje) {
+        Serial.println(F("AWS IoT: mensaje demasiado grande; no se publica."));
         return false;
     }
-    if (!cliente_.publish(temaActualizar_, documento, false, 1)) {
+    // QoS 1: espera el PUBACK, asi un false indica que AWS no lo recibio.
+    if (!cliente_.publish(tema, contenido, false, 1)) {
         Serial.println(F("AWS IoT: fallo de publicacion. Reintento de conexion en 5 s."));
         cerrarConexion();
         return false;

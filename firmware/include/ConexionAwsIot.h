@@ -7,7 +7,7 @@
 
 /**
  * MQTT sobre TLS con autenticacion mutua (certificado X.509 del Thing) hacia AWS IoT Core.
- * Usa los temas del Shadow clasico del Thing (ver docs/contratos.md, seccion 3).
+ * Usa los temas del Shadow clasico del Thing y el tema de eventos (docs/contratos.md, seccion 3).
  *
  * Se atiende sin bloquear llamando actualizar() en cada vuelta de loop(). Los mensajes del
  * Shadow se copian en el callback y la aplicacion los retira con tomarMensaje(): nunca se
@@ -44,6 +44,10 @@ public:
     // Publica un documento {"state":{"reported":{...}}} en el tema update del Shadow.
     bool publicarActualizacion(const char* documento);
 
+    // Publica un evento en caja-enigmas/<thing>/eventos. Requiere el permiso iot:Publish de la
+    // politica v2: sin el, AWS corta la conexion.
+    bool publicarEvento(const char* json);
+
     // Entrega un mensaje del Shadow pendiente: primero el documento completo, luego el delta.
     // Si llega un mensaje antes de retirar el anterior del mismo tipo, se conserva el ultimo.
     bool tomarMensaje(MensajeShadow& destino);
@@ -70,6 +74,7 @@ private:
     char temaDocumentoAceptado_[TamanoTema] = {};
     char temaDocumentoRechazado_[TamanoTema] = {};
     char temaActualizacionRechazada_[TamanoTema] = {};
+    char temaEventos_[TamanoTema] = {};
 
     MensajeShadow documentoPendiente_ = {TipoMensaje::DocumentoCompleto, {}};
     MensajeShadow deltaPendiente_ = {TipoMensaje::Delta, {}};
@@ -89,6 +94,7 @@ private:
     bool prepararHora();
     void intentarConectar();
     bool suscribir(const char* tema);
+    bool publicar(const char* tema, const char* contenido);
     void cerrarConexion();
     void recibirMensaje(const char* tema, const char* datos, int longitud);
     static bool copiarContenido(MensajeShadow& destino, const char* datos, int longitud);
