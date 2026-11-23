@@ -19,11 +19,11 @@ class TestFlujosSkill(unittest.TestCase):
         self.items = {}
         self.estados = {
             "caja-enigmas-01": {"reported": {
-                "tapa": "cerrada", "cerradura": "cerrada",
+                "modo": "manual", "cerradura": "cerrada",
                 "codigoVinculacion": "0000",
             }},
             "caja-enigmas-02": {"reported": {
-                "tapa": "abierta", "cerradura": "abierta",
+                "modo": "manual", "cerradura": "abierta",
                 "codigoVinculacion": "0421",
             }},
         }
@@ -88,9 +88,9 @@ class TestFlujosSkill(unittest.TestCase):
         self.assertIn("correctamente", voz(self.vincular(
             "usuario-02", "2", "0421"
         )))
-        self.assertIn("cerrada", voz(self.solicitar("ConsultarTapaIntent")))
+        self.assertIn("cerrada", voz(self.solicitar("ConsultarCerraduraIntent")))
         self.assertIn("abierta", voz(self.solicitar(
-            "ConsultarTapaIntent", "usuario-02"
+            "ConsultarCerraduraIntent", "usuario-02"
         )))
         self.solicitar("AbrirCerraduraIntent")
         self.solicitar("CerrarCerraduraIntent", "usuario-02")

@@ -21,8 +21,10 @@ with (
     from lambda_function import crear_skill
 
 
-def crear_lambda(repositorio, registro, shadow):
-    return crear_skill(repositorio, registro, shadow).lambda_handler()
+def crear_lambda(repositorio, registro, shadow, **dependencias):
+    return crear_skill(
+        repositorio, registro, shadow, **dependencias
+    ).lambda_handler()
 
 
 def evento_alexa(intent=None, usuario="usuario-01", slots=None,
