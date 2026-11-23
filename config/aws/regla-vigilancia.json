@@ -1,0 +1,13 @@
+{
+  "Name": "caja-enigmas-vigilancia-cada-5-min",
+  "Description": "Invoca caja-enigmas-vigilancia para detectar cajas sin reportar",
+  "ScheduleExpression": "rate(5 minutes)",
+  "State": "ENABLED",
+  "EventBusName": "default",
+  "Targets": [
+    {
+      "Id": "caja-enigmas-vigilancia",
+      "Arn": "arn:aws:lambda:us-east-1:977308215256:function:caja-enigmas-vigilancia"
+    }
+  ]
+}
