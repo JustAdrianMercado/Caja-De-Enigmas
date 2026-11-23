@@ -187,7 +187,7 @@ Llenar al cerrar cada iteración, con lo que **de verdad** quedó hecho. Si un c
 - **Archivos, commits y PR:**
   - nuevos: `EventoJson.*`, `RelojUtc.*`, `ColaEventos.*`, `firmware/test/test_evento_json/`, `firmware/test/test_cola_eventos/`, `lambda-vigilancia/**`, `config/aws/politica-rol-vigilancia.json`, `config/aws/regla-vigilancia.json` y `docs/informe-p4-adrian.md`;
   - cambiados: `main.cpp`, `ConexionAwsIot.*`, `firmware/platformio.ini` y `docs/contratos.md` (secciones 3.3, 6 y 9.3);
-  - rama `feat/firmware-aws-p4-it2`; PR: pendiente.
+  - rama `feat/firmware-aws-p4-it2`, PR #10.
 - **Decisiones y por qué:**
   - **Todos los eventos pasan por la cola, haya red o no**, así se publican siempre en orden. Sale uno por vuelta de `loop()`, porque cada publicación QoS 1 espera el PUBACK.
   - **El JSON se arma en el momento del evento**, así `tsObjeto` es la hora real y no la de la reconexión.
