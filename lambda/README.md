@@ -63,6 +63,83 @@ y permisos de lectura existentes y probar en el simulador con una caja
 vinculada y reportes completos y parciales. No se realizaron despliegues,
 consultas a AWS ni pruebas físicas para RF4; las pruebas usan AWS simulado.
 
+## Pistas progresivas: preparación local
+
+El catálogo de Lucía (`lambda/pistas.py`) sigue ausente. No se crea un
+catálogo sustituto ni se supone su estructura. La composición de producción
+continúa sin proveedor: las pistas no se declaran integradas.
+
+La auditoría identifica `session.sessionId` y `session.new` en la solicitud
+de Alexa, `context.System.user.userId` como identidad y `reported.idPartida`,
+`reported.desafioActual` y `reported.estadoPartida` como estado real de juego.
+El repositorio DynamoDB solo conserva vinculaciones. No existe un adaptador
+de persistencia del SDK configurado ni un contador previo de pistas.
+
+El requisito de reinicio entre sesiones permite usar los atributos de sesión
+existentes del SDK: `progresoPistas` conserva un único contexto de usuario,
+caja, sesión, partida y desafío, con el último nivel entregado. Los atributos
+se devuelven en `sessionAttributes` y Alexa los envía en solicitudes siguientes
+de esa sesión; no recuperan progreso en una sesión nueva ni son persistencia
+duradera. Tampoco se guarda estado en variables globales de Lambda.
+
+`crear_skill` y `PedirPistaIntentHandler` conservan `obtener_pista(desafio)`
+para consumidores actuales, con su comportamiento de pista única. Añaden
+el argumento opcional `obtener_pista_progresiva(desafio, nivel)`, una función
+inyectada que devuelve texto o ausencia de contenido. Esta firma es un punto
+de adaptación local, **no una interfaz atribuida al catálogo de Lucía**.
+Si se inyectan ambos proveedores, tiene prioridad el progresivo; no se
+sustituye una pista progresiva ausente por contenido del proveedor anterior.
+
+Con proveedor progresivo, los niveles son 1 (general), 2 (intermedio),
+3 (explícito) y luego siempre 3. La correspondencia semántica de los textos
+la debe aportar el catálogo real. Se exige partida `en_curso`, desafío
+válido e `idPartida` entero no negativo según contratos.md §2. Un cambio
+de contexto o una sesión nueva reinicia en 1. Una orden de inicio pendiente
+no acredita una partida nueva: el reinicio se basa en el identificador
+reportado por el dispositivo. Se conservan los atributos de otros intents.
+
+El estado se prepara en el gestor de sesión antes de publicar; un fallo en
+su lectura o asignación impide publicar y entregar la pista. Si publicar
+falla, se restaura el estado anterior y responde el manejador global. Sin
+contenido válido no se avanza ni publica. Cada entrega, incluso la repetición
+de nivel 3, llama a `PublicadorEventos.publicar_pista` con el payload existente
+`{"tipo":"pista","desafio":"...","origen":"voz"}`. No añade nivel,
+sesión, usuario ni partida al evento, ni cambia Shadow o tablas.
+
+Límites: los atributos de sesión no ofrecen transacciones con MQTT ni
+confirmación de que Alexa habló. Un error posterior a publicar o una
+retransmisión puede producir eventos repetidos; QoS 1 tampoco garantiza
+exactamente una entrega. El éxito del SDK no prueba persistencia en el
+histórico. La Lambda solo observa cambios incluidos en el último Shadow;
+no puede detectar transiciones intermedias no observadas ni identificar una
+partida cuyo identificador y contexto se reutilizaran. Resolver garantías
+adicionales requeriría otro diseño y, posiblemente, cambios de contrato.
+
+TDD local: primero las 12 pruebas iniciales fallaron por el argumento aún
+inexistente `obtener_pista_progresiva`. Tras implementar, pasaron; se amplió
+la cobertura a 16 pruebas y se revisaron validación, contexto y conservación
+de atributos sin alterar pruebas existentes.
+
+```powershell
+python -m unittest discover -s lambda/tests -p test_pistas_progresivas.py -v
+# 16 pruebas, OK
+python -m unittest discover -s lambda/tests
+# 146 pruebas, OK (incluye las 11 de RF4 y compatibilidad del proveedor anterior)
+```
+
+Las pruebas simulan proveedores y AWS, transportan los atributos entre
+peticiones y cubren secuencia y repeticiones, reinicios por desafío, partida
+y sesión, aislamiento de usuarios/cajas, ausencia de contenido, estado
+corrupto y fallos de lectura, asignación, proveedor y publicación. También
+verifican el payload real de `PublicadorEventos` con cliente simulado,
+conservación del contador entre otros intents y otra instancia de la skill.
+
+Pendiente con Lucía: recibir los tres textos ordenados de cada desafío,
+acordar su estructura real y conectar un adaptador al proveedor progresivo
+en la composición. Después, revisar el modelo y comprobar sesiones y frases
+en el simulador. No se modificaron sus archivos, firmware, almacenamiento o
+vigilancia; no se crearon recursos, despliegues, commits ni PR en esta tarea.
+
 ## Iteración 2: backend local y dependencias pendientes
 
 Se registran los ocho intents del contrato v2: `IniciarPartidaIntent`,
