@@ -1,0 +1,50 @@
+{
+  "TableName": "CajaEnigmasHistorico",
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "categoriaAlerta",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "thingName",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "ts",
+      "AttributeType": "S"
+    }
+  ],
+  "KeySchema": [
+    {
+      "AttributeName": "thingName",
+      "KeyType": "HASH"
+    },
+    {
+      "AttributeName": "ts",
+      "KeyType": "RANGE"
+    }
+  ],
+  "BillingMode": "PAY_PER_REQUEST",
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "alertas-por-fecha",
+      "KeySchema": [
+        {
+          "AttributeName": "categoriaAlerta",
+          "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "ts",
+          "KeyType": "RANGE"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      }
+    }
+  ],
+  "TimeToLiveSpecification": {
+    "Enabled": true,
+    "AttributeName": "expiraEn"
+  }
+}

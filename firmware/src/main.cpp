@@ -44,8 +44,9 @@
 
 namespace {
 
-constexpr char VersionFirmware[] = "0.4.0";
+constexpr char VersionFirmware[] = "0.4.1";
 constexpr unsigned long IntervaloReportePeriodicoMs = 60000UL;  // Respaldo (contratos, sec. 3).
+constexpr unsigned long IntervaloMonitorSensoresMs = 1000UL;   // Comando "sensores".
 constexpr size_t TamanoReporte = 512;  // El reporte v2 mas largo ocupa unos 370 bytes.
 
 // --- Conexion, Shadow y persistencia ---------------------------------------------------------
@@ -61,6 +62,8 @@ ConsolaSerial consola;
 
 ConexionAwsIot::MensajeShadow mensajeRecibido;  // Global: 3 KB fuera de la pila de loop().
 unsigned long ultimoReporteMs = 0;
+bool estaMonitoreandoSensores = false;
+unsigned long ultimoMonitorSensoresMs = 0;
 
 // --- Hardware (docs/contratos.md, seccion 8) y desafios ---------------------------------------
 
@@ -303,9 +306,67 @@ void solicitarReportePeriodico() {
 // --- Consola de prueba -----------------------------------------------------------------------
 
 void mostrarAyuda() {
-    Serial.println(F("Comandos: iniciar, abrir, cerrar, estado, codigo, ayuda."));
+    Serial.println(F("Comandos: iniciar, abrir, cerrar, estado, codigo, sensores, ayuda."));
     Serial.println(F("iniciar equivale al pulsador de inicio (solo en modo juego)."));
     Serial.println(F("abrir y cerrar mueven el servo en cualquier modo, para probar el montaje."));
+    Serial.println(F("sensores muestra cada 1 s la distancia, la luz y los botones; otra vez, lo detiene."));
+}
+
+// Lee el pin directamente (no el antirrebote del juego) para revisar el cableado: con
+// INPUT_PULLUP, un boton bien conectado a GND solo lee LOW mientras se lo aprieta.
+const __FlashStringHelper* textoBoton(uint8_t pin) {
+    return digitalRead(pin) == LOW ? F("APRETADO") : F("suelto");
+}
+
+void mostrarDistancia() {
+    Serial.print(F("Sensores: distancia="));
+    switch (sensorDistancia.estadoMedicion()) {
+        case EstadoMedicionDistancia::Valida:
+            Serial.print(sensorDistancia.ultimaDistanciaValidaCm());
+            Serial.print(F(" cm"));
+            break;
+        case EstadoMedicionDistancia::SinEco:
+            Serial.print(F("sin eco"));
+            break;
+        case EstadoMedicionDistancia::FueraDeRango:
+            Serial.print(F("fuera de rango"));
+            break;
+        case EstadoMedicionDistancia::SinMedicion:
+            Serial.print(F("sin medicion"));
+            break;
+    }
+}
+
+void mostrarSensores() {
+    mostrarDistancia();
+    Serial.print(F(" | luz="));
+    Serial.print(sensorLuz.luzPorcentaje());
+    Serial.print(F(" % (adc="));
+    Serial.print(sensorLuz.valorAdc());
+    Serial.print(F(") | botones: rojo="));
+    Serial.print(textoBoton(PinPulsadorRojo));
+    Serial.print(F(" amarillo="));
+    Serial.print(textoBoton(PinPulsadorAmarillo));
+    Serial.print(F(" verde="));
+    Serial.print(textoBoton(PinPulsadorVerde));
+    Serial.print(F(" inicio="));
+    Serial.println(textoBoton(PinPulsadorInicio));
+}
+
+void alternarMonitorSensores() {
+    estaMonitoreandoSensores = !estaMonitoreandoSensores;
+    Serial.println(estaMonitoreandoSensores ? F("Sensores: monitor activado (cada 1 s).")
+                                            : F("Sensores: monitor detenido."));
+}
+
+void atenderMonitorSensores() {
+    if (!estaMonitoreandoSensores ||
+        millis() - ultimoMonitorSensoresMs < IntervaloMonitorSensoresMs) {
+        return;
+    }
+    ultimoMonitorSensoresMs = millis();
+    tomarLecturas();
+    mostrarSensores();
 }
 
 void mostrarEstado() {
@@ -338,6 +399,8 @@ void ejecutarComando(const char* comando) {
     } else if (strcmp(comando, "codigo") == 0) {
         Serial.print(F("Vinculacion: codigo de esta caja = "));
         Serial.println(codigoVinculacion.texto());
+    } else if (strcmp(comando, "sensores") == 0) {
+        alternarMonitorSensores();
     } else {
         mostrarAyuda();
     }
@@ -398,6 +461,7 @@ void loop() {
     sincronizarPartidaConShadow();
 
     atenderConsola();
+    atenderMonitorSensores();
     solicitarReportePeriodico();
     publicarReporteSiHaceFalta();
     publicarEventoPendiente();

@@ -1,0 +1,14 @@
+{
+  "ruleName": "CajaEnigmasEventos",
+  "description": "Recibe eventos de la caja de enigmas y los envía a Lambda.",
+  "sql": "SELECT *, 'evento' AS tipoMensaje,\n       topic(2) AS thingName,\n       timestamp() AS tsRegla\nFROM 'caja-enigmas/+/eventos'",
+  "awsIotSqlVersion": "2016-03-23",
+  "ruleDisabled": false,
+  "actions": [
+    {
+      "lambda": {
+        "functionArn": "arn:aws:lambda:us-east-1:<ID_CUENTA>:function:caja-enigmas-almacenamiento"
+      }
+    }
+  ]
+}
