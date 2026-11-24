@@ -48,7 +48,7 @@ Esta práctica amplía la [Práctica 3](INFORME.md), cuyo informe se conserva si
 | Aspecto | Práctica 3 | Práctica 4 | Motivo |
 |---|---|---|---|
 | Función | Cerradura controlada por voz | Módulo de escape room con tres desafíos y apertura automática | Agrega la lógica de control en el Edge (RF13). |
-| Sensores | Reed switch de la tapa | HC-SR04, LDR y 4 pulsadores | Cada desafío necesita su sensor. El reed se quitó porque no aportaba al juego ([planificación](docs/planificacion/p4-00-resumen.md)). |
+| Sensores | Reed switch de la tapa | HC-SR04, LDR y 4 pulsadores | Cada desafío necesita su sensor. El reed se quitó porque no aportaba al juego ([planificación](docs/planificacion/p4-00-resumen.md)). Desde entonces, `reported.cerradura` es la posición que se le ordenó al servo, no una medición de la tapa. |
 | Actuadores | Servo SG90 | Servo SG90 y 3 LEDs | Los LEDs muestran la secuencia y el resultado de cada desafío. |
 | Shadow | `cerradura`, `tapa`, `codigoVinculacion` | Se agregan modo, dificultad, parámetros, partida y lecturas; se quita `tapa` | RF14: modo y parámetros consultables y modificables por voz. |
 | Nube | Lambda de la skill y tabla de vinculaciones | Además, 2 reglas de IoT, Lambda de almacenamiento, Lambda de vigilancia, regla programada y tabla de histórico | RF10 a RF13 y RF15. |
@@ -89,7 +89,7 @@ RF1 a RF9 son los de la Práctica 3, aplicados a todos los sensores y actuadores
 | RF9 | Validar la existencia y el código antes de vincular, y permitir reemplazar o eliminar el vínculo. | 2.11 | `vincular_caja.py`, `desvincular_caja.py` | P-12 |
 | RF10 | Disparar el almacenamiento con reglas de AWS IoT, para las lecturas y para los eventos. | 2.10 | `CajaEnigmasLecturas`, `CajaEnigmasEventos` | P-14 |
 | RF11 | Validar tipos y rangos, descartar los mensajes inválidos, agregar `thingName` y la marca de tiempo, y guardar las lecturas. | 2.9, 2.10 | `validacion.py`, `enriquecimiento.py` | P-13, P-14 |
-| RF12 | Guardar los eventos de la cerradura con su origen (`voz`, `edge` o `nube`). | 2.9 | `EventoJson`, Lambda de almacenamiento | P-14, sección 5.1 |
+| RF12 | Guardar los eventos de la cerradura con su origen (`voz`, `edge` o `nube`). Hoy ninguna regla mueve la cerradura desde la Nube, así que `nube` queda reservado. | 2.9 | `EventoJson`, Lambda de almacenamiento | P-14, sección 5.1 |
 | RF13 | Ejecutar el juego y la apertura en el Edge, y detectar en la Nube las cajas que dejan de reportar. | 2.7 | `PartidaEnigmas`, `vigilancia.py` | P-02 a P-05, RNF-3, RNF-8 |
 | RF14 | Reportar el modo y los parámetros en `reported`, y consultarlos y cambiarlos por voz a través de `desired`. | 2.8, 2.11 | `cambiar_*.py`, `consultar_*.py`, `ConfiguracionJuego` | P-06, P-07 |
 | RF15 | Diseñar los mockups de reportes e indicar la consulta de DynamoDB de cada dato. | 2.12 | [docs/mockups/](docs/mockups/README.md) | P-17, sección 5.1 |
@@ -852,10 +852,11 @@ El modelo parte de los **patrones de acceso** de los mockups y de la lógica de 
 | 4 | Pistas pedidas por desafío | Igual que el 1, con `evento = pista` | Panel |
 | 5 | Última lectura de una caja | `Query` por `thingName` con `ScanIndexForward = false` | Lambda de vigilancia |
 | 6 | Alertas recientes de todas las cajas | `Query` sobre el GSI con `categoriaAlerta = sin_reporte`, `ScanIndexForward = false` | Panel |
+| 7 | Lecturas de luz y distancia de una caja en un rango de fechas | `Query` por `thingName` con `ts BETWEEN`, filtrando `tipo = lectura` | Panel (calibración) |
 
 **Por qué este diseño:**
 - **`thingName` como clave de partición:** todas las consultas son por caja, excepto la 6, y así los datos de cada usuario quedan separados.
-- **Una sola tabla de histórico:** los patrones 1 a 5 son por caja y por rango de fechas, así que una sola `Query` trae lecturas y eventos juntos. Tablas separadas obligarían a hacer dos consultas.
+- **Una sola tabla de histórico:** los patrones 1 a 5 y el 7 son por caja y por rango de fechas, así que una sola `Query` trae lecturas y eventos juntos. Tablas separadas obligarían a hacer dos consultas.
 - **GSI disperso:** la única consulta entre cajas es la de alertas. Como solo las alertas tienen `categoriaAlerta`, el índice es pequeño y no se paga por indexar las lecturas.
 - **TTL solo en las lecturas:** son el 67 % de los ítems y solo sirven unos días. Los eventos son pocos y sostienen las estadísticas.
 - ***On-demand*:** el tráfico es bajo y llega en ráfagas durante las partidas, así que no conviene reservar capacidad.
@@ -968,6 +969,7 @@ FROM 'caja-enigmas/+/eventos'
 | Pistas por desafío | 4 | Contar `evento = pista` por `desafio`. | Reescribir las instrucciones del desafío que más pistas necesita. |
 | Historial de partidas | 1 | Eventos agrupados por `idPartida`, con la duración de `partida_resuelta`. | Revisar una partida concreta. |
 | Alertas de cajas | 6 | `Query` del GSI `alertas-por-fecha`, de la más nueva a la más vieja. | Revisar una caja antes de la siguiente sesión. |
+| Luz ambiente de la sala (agregado después del mockup) | 7 | Mediana y percentiles 10 y 90 de `luzPorcentaje` en las lecturas del período, y cuántas superan el umbral. | Fijar el umbral de luz por encima de la luz ambiente, para que el desafío exija la linterna. |
 
 ## 3. Desarrollo e implementación
 
@@ -1306,6 +1308,7 @@ Se consultó `CajaEnigmasHistorico` con los patrones 1 a 4 del mockup (`Query` p
 | Distancia (20 ± 6 cm) | 12 superados, mediana de 6,0 s, máximo de 147,5 s, 0 fallos |
 | Luz (umbral del 70 %) | 12 superados, mediana de 1,6 s, máximo de 13,9 s, 0 fallos |
 | Pistas pedidas | 4, todas en memoria |
+| Luz ambiente (patrón 7, 200 lecturas) | Mediana del 77 %; el 80 % de las lecturas, entre 74 y 79 %. 193 de 200 (97 %) superan el umbral del 70 %. |
 | Eventos de la cerradura | 29: 15 cierres y 12 aperturas por el juego (`edge`), y 1 apertura y 1 cierre por voz (`voz`) |
 | Alertas de cajas sin reportar | 3 en el GSI `alertas-por-fecha`: las 2 del 23/11 y la de `caja-enigmas-01` del 24/11 a las 15:48, con 18 min sin reportar |
 
@@ -1372,7 +1375,7 @@ El cómputo de Lambda es el 0,4 % de los 400 000 GB-s gratuitos. La vigilancia c
 
 ### 5.4 Análisis crítico de la decisión Edge / Nube
 
-- **La lógica del juego tenía que estar en el Edge.** La apertura tarda 12 ms en el ESP32. Por la nube, una orden tarda entre 0,2 y 1 s, y hasta 7 s con un arranque en frío. Además, durante la sesión la caja estuvo 44 min sin nube (8 cortes) y en uno de ellos se jugó una partida completa: con la lógica en la Nube, el juego se habría congelado en cada corte.
+- **La lógica del juego tenía que estar en el Edge.** La apertura tarda 12 ms en el ESP32. Por la nube, una orden por voz tarda entre 0,2 y 1,2 s, y una Lambda que arranca en frío suma unos 7 s, como se midió en la de almacenamiento. Además, durante la sesión la caja estuvo 44 min sin nube (8 cortes) y en uno de ellos se jugó una partida completa: con la lógica en la Nube, el juego se habría congelado en cada corte.
 - **La vigilancia solo puede estar en la Nube.** Una caja apagada no puede avisar que está apagada. La regla necesita el histórico (la última lectura), cubre todas las cajas y no gasta mensajes del objeto. Su costo es fijo: 288 invocaciones por día.
 - **La desventaja del Edge es la calibración.** Los umbrales dependen de la sala, como mostró la luz. Por eso los parámetros se cambian por voz (RF14) sin reprogramar la caja. Un paso siguiente sería que una regla de la Nube los ajuste sola con el histórico (sección 7).
 - **El Shadow como única interfaz evitó los conflictos:** la voz y la lógica automática nunca movieron el servo a la vez. En modo juego, la orden de abrir se rechazó en la skill y el ESP32 tampoco la habría obedecido.
