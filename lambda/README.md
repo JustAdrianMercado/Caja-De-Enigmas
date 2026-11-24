@@ -13,6 +13,56 @@ Punto de entrada: `lambda_function.lambda_handler`; runtime objetivo Python 3.12
 Variables: `TABLA_VINCULACIONES`, `PREFIJO_THING` e `IOT_ENDPOINT`.
 El backend usa el rol de ejecución; no se incluyen credenciales personales.
 
+## RF4: consultar sensores de la caja vinculada
+
+`ConsultarSensoresIntent`, sin slots, usa `ConsultarSensoresIntentHandler`,
+registrado en `crear_skill`. Hereda de `IntentCajaHandler`: obtiene
+`context.System.user.userId`, consulta `RepositorioVinculaciones.obtener`
+y pasa únicamente el `thingName` vinculado a `ServicioShadow.leer_reported`.
+No cambia las interfaces de los servicios ni añade dependencias.
+
+Informa `distanciaCm` en centímetros y `luzPorcentaje` en porcentaje del
+último reporte. Nunca sustituye mediciones con `desired`, distancia objetivo
+o umbral de luz. Valida enteros según contratos.md §2: distancia 2–400 cm
+y luz 0–100 %. Rechaza booleanos, decimales, cadenas y valores fuera de rango;
+el cero de luz es válido. Una lectura ausente o inválida se explica y se
+comunica la otra si está disponible; si faltan ambas, informa que no tiene
+lecturas válidas. No calcula antigüedad ni acredita una medición en vivo.
+Sin vinculación mantiene la ayuda existente; los errores de servicios se
+propagan al manejador global, con respuesta segura y repregunta.
+
+Evidencia local de TDD (Python 3.12.10):
+
+- ROJO: al ejecutar el archivo nuevo antes de implementar, unittest falló
+  al importarlo con `ModuleNotFoundError: manejadores.consultar_sensores`.
+- VERDE: implementación y registro con dependencias existentes; se corrigió
+  la serialización JSON de una prueba nueva de `can_handle`.
+- REFACTOR: validación común de enteros y rangos con constantes descriptivas,
+  salida temprana sin lecturas y composición sencilla de respuestas.
+- `python -m unittest discover -s lambda/tests -p test_consultar_sensores.py -v`:
+  **11 pruebas, OK**. Cubren ambas lecturas, cada lectura parcial, ausencia
+  de ambas, vinculación e identidad ausentes, error Shadow, cero de luz,
+  límites y tipos inválidos, separación de `desired` y objetivos, selección
+  exclusiva del intent y registro mediante el dispatcher real del SDK.
+  También comprueban ausencia de escrituras y conservación de la sesión.
+- `python -m unittest discover -s lambda/tests -v`: **130 pruebas, OK**,
+  incluidos cerradura, vinculación/desvinculación, partida, progreso, pistas,
+  modo, dificultad, parámetros, registro y publicación de eventos simulados.
+
+Pendiente de integración: Lucía debe añadir `ConsultarSensoresIntent` sin
+slots al modelo de Alexa, con frases como «consulta los sensores»,
+«qué distancia y luz mide mi caja», compilar y probar su reconocimiento.
+El intent solicitado para RF4 todavía no figura en la tabla de contratos.md
+§7: queda pendiente incorporarlo mediante el acuerdo del grupo. Esta tarea
+solo actualiza documentación de Lambda; no cambia el contrato ni el modelo.
+
+Después de revisar los cambios e integrar el modelo, preparar el ZIP con
+las dependencias de despliegue existentes y cargarlo manualmente desde la
+consola en `caja-enigmas-skill`, región `us-east-1`. Verificar configuración
+y permisos de lectura existentes y probar en el simulador con una caja
+vinculada y reportes completos y parciales. No se realizaron despliegues,
+consultas a AWS ni pruebas físicas para RF4; las pruebas usan AWS simulado.
+
 ## Iteración 2: backend local y dependencias pendientes
 
 Se registran los ocho intents del contrato v2: `IniciarPartidaIntent`,
