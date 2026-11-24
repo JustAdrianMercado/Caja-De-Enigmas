@@ -1132,6 +1132,8 @@ El 24/11 a las 15:30, `CajaEnigmasHistorico` tenía 288 ítems (45 KB), y el GSI
 
 **Sesión de pruebas:** martes 24/11/2026, de 13:05 a 16:06 (hora de La Paz, UTC−4), con `caja-enigmas-01`, el firmware 0.4.1 y el hotspot de un celular en 2,4 GHz.
 
+**Hoja de pruebas (PDF):** los resultados de la sesión también están resumidos en una hoja de 4 páginas, [Hoja_Pruebas_P4_Caja_Enigmas.pdf](docs/evidencias/p4/pruebas/Hoja_Pruebas_P4_Caja_Enigmas.pdf). Tiene las pruebas del juego, de voz y de la nube, las lecturas de los sensores, las mediciones y los problemas encontrados. Las cifras coinciden con las de las secciones 4.4 a 4.6, que dan el detalle de cada prueba.
+
 **Instrumentos:**
 - **Registro serial** de la caja, con la hora de la PC en cada línea: 8 700 líneas ([registro](docs/evidencias/p4/pruebas/registro-serial.log)).
 - **Registro de cambios del Shadow**, consultado cada pocos segundos ([registro](docs/evidencias/p4/pruebas/registro-shadow.log)).
@@ -1244,9 +1246,9 @@ En total, la caja estuvo unos **44 min sin nube**, el 25 % de la sesión. Nunca 
 | La luz ambiente de la sala (72 a 76 %) supera el umbral por defecto (70 %), así que el desafío de luz se supera casi al instante (mediana de 1,6 s). | El umbral se fijó sin medir la sala. | Subir el umbral a 85 % por voz ("ajusta el umbral de luz a ochenta y cinco"), entre la luz ambiente y la linterna. | Detectado con los datos; se aplica con RF14. |
 | Tras reconectar, una publicación QoS 1 falló (14:20:19). | La red del hotspot recién arrancaba. | El firmware cierra la conexión y vuelve a conectarse; el reporte se reenvió en 9 s. | Resuelto por diseño |
 | Fallos de DNS y TLS en el hotspot (cortes 2 a 5). | Internet del celular inestable. | Reintentos cada 5 s. Sin pérdida de eventos. | Resuelto por diseño |
-| 12 de 298 ítems (4 %) tardaron entre 6,4 y 7,5 s en guardarse, por encima de los 5 s declarados. | Arranques en frío de la Lambda de almacenamiento con 128 MB: el primer mensaje del día, uno a las 14:58 y los primeros mensajes después de cada corte largo. Tras el corte 8 llegaron 9 mensajes juntos y cada invocación concurrente arrancó su propio contenedor. | Subir la memoria a 256 MB, que da más CPU al iniciar `boto3`, y medir otra vez. | Pendiente (sección 7) |
-| "cambia la distancia objetivo a veinte centímetros" reconoce el intent, pero no el valor. | La frase con unidad no está en el modelo. | Agregar frases con "centímetros" y "por ciento". | Pendiente |
-| El rechazo del umbral dice "La umbral de luz en porcentaje debe ser…". | El texto usa el mismo artículo para los dos parámetros. | Usar "El" para el umbral. | Pendiente, menor |
+| 12 de 298 ítems (4 %) tardaron entre 6,4 y 7,5 s en guardarse, por encima de los 5 s declarados. | Arranques en frío de la Lambda de almacenamiento con 128 MB: el primer mensaje del día, uno a las 14:58 y los primeros mensajes después de cada corte largo. Tras el corte 8 llegaron 9 mensajes juntos y cada invocación concurrente arrancó su propio contenedor. | Subir la memoria a 256 MB, que da más CPU al iniciar `boto3`, y medir otra vez. | No resuelto: mejora propuesta (sección 7) |
+| "cambia la distancia objetivo a veinte centímetros" reconoce el intent, pero no el valor. | La frase con unidad no está en el modelo. | Agregar frases con "centímetros" y "por ciento". | No resuelto: mejora propuesta (sección 7) |
+| El rechazo del umbral dice "La umbral de luz en porcentaje debe ser…". | El texto usa el mismo artículo para los dos parámetros. | Usar "El" para el umbral. | No resuelto: mejora propuesta, menor |
 | Alexa confundía "cuánta luz tiene mi caja" con desvincular. | Frases parecidas entre intents. | Se agregaron frases al modelo. | Resuelto |
 | Riesgo: dos ítems del mismo tipo en el mismo milisegundo se pisarían, porque `PutItem` reemplaza. | Clave `ts` = fecha con ms + tipo. | No ocurrió (94 de 94 eventos guardados). Se recomienda una escritura condicional. | Aceptado |
 
@@ -1525,6 +1527,7 @@ El prefijo de cada caso indica el intent. En las pruebas de control de la cerrad
 
 | Evidencia | Archivo |
 |---|---|
+| Hoja de pruebas de la sesión del 24/11, con los resultados del juego, la voz, la nube, los sensores y los problemas encontrados | [Hoja_Pruebas_P4_Caja_Enigmas.pdf](docs/evidencias/p4/pruebas/Hoja_Pruebas_P4_Caja_Enigmas.pdf) |
 | Registro serial de la sesión del 24/11, con la hora de la PC (código de vinculación y endpoint ocultados) | [registro-serial.log](docs/evidencias/p4/pruebas/registro-serial.log) |
 | Cambios del Shadow de `caja-enigmas-01` | [registro-shadow.log](docs/evidencias/p4/pruebas/registro-shadow.log) |
 | Pruebas de voz con el simulador | [pruebas-voz.log](docs/evidencias/p4/pruebas/pruebas-voz.log) |
