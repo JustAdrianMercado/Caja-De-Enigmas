@@ -39,7 +39,10 @@ class TestPistasProgresivas(unittest.TestCase):
                                   "new": self.es_nueva,
                                   "attributes": copy.deepcopy(self.atributos)})
         respuesta = self.invocar(evento, None)
-        self.atributos = respuesta.get("sessionAttributes", {})
+        # Simula el transporte JSON de Alexa; no comparte objetos del SDK.
+        self.assertIn("sessionAttributes", respuesta)
+        self.ultima_respuesta = json.loads(json.dumps(respuesta))
+        self.atributos = self.ultima_respuesta["sessionAttributes"]
         self.es_nueva = False
         return voz(respuesta)
 
@@ -53,6 +56,83 @@ class TestPistasProgresivas(unittest.TestCase):
         self.publicador.publicar_pista.assert_called_with(
             "caja-enigmas-01", "memoria"
         )
+
+    def test_atributos_salen_en_respuesta_y_se_recuperan_de_peticion(self):
+        self.solicitar()
+        progreso = self.ultima_respuesta["sessionAttributes"]["progresoPistas"]
+        self.assertEqual(progreso, {
+            "contexto": {"usuario": "usuario-01", "caja": "caja-enigmas-01",
+                         "sesion": "sesion-01", "partida": 12,
+                         "desafio": "memoria"},
+            "nivel": 1,
+        })
+        self.assertIn("nivel 2", self.solicitar())
+        self.assertEqual(self.atributos["progresoPistas"]["nivel"], 2)
+        self.assertEqual(progreso["nivel"], 1)
+        # Sin reenviar atributos el SDK no recupera estado por sessionId.
+        self.atributos = {}
+        self.assertIn("nivel 1", self.solicitar())
+
+    def test_cada_cambio_de_contexto_reinicia_desde_nivel_avanzado(self):
+        for campo in ("usuario", "caja", "sesion", "partida", "desafio"):
+            with self.subTest(campo=campo):
+                self.setUp()
+                self.solicitar()
+                self.solicitar()
+                self.assertEqual(self.atributos["progresoPistas"]["nivel"], 2)
+                if campo == "usuario":
+                    self.usuario = "usuario-02"
+                elif campo == "caja":
+                    self.repo.obtener.return_value = {
+                        "thingName": "caja-enigmas-02",
+                    }
+                elif campo == "sesion":
+                    self.sesion = "sesion-02"
+                elif campo == "partida":
+                    self.reportado["idPartida"] = 13
+                else:
+                    self.reportado["desafioActual"] = "distancia"
+                self.assertIn("nivel 1", self.solicitar())
+                self.assertEqual(self.atributos["progresoPistas"]["nivel"], 1)
+
+    def test_contenido_invalido_conserva_contador_y_no_publica(self):
+        self.solicitar()
+        anterior = copy.deepcopy(self.atributos)
+        self.publicador.reset_mock()
+        self.proveedor.side_effect = None
+        for contenido in (None, "", " \n\t ", False, 0, 3, [], {}):
+            with self.subTest(contenido=contenido):
+                self.proveedor.return_value = contenido
+                self.assertIn("No hay una pista", self.solicitar())
+                self.assertEqual(self.atributos, anterior)
+                self.publicador.publicar_pista.assert_not_called()
+                self.proveedor.assert_called_with("memoria", 2)
+
+    def test_fallo_publicacion_restaura_contador_existente(self):
+        self.solicitar()
+        anterior = copy.deepcopy(self.atributos)
+        self.publicador.publicar_pista.side_effect = RuntimeError("simulado")
+        with self.assertLogs("manejadores.errores", level="ERROR"):
+            self.assertNotIn("PRUEBA", self.solicitar())
+        self.assertEqual(self.atributos, anterior)
+        self.publicador.publicar_pista.side_effect = None
+        self.assertIn("nivel 2", self.solicitar())
+        self.assertEqual(self.publicador.publicar_pista.call_count, 3)
+
+    def test_proveedor_anterior_conserva_firma_y_no_crea_contador(self):
+        proveedor_anterior = Mock(return_value="PRUEBA <anterior> & texto")
+        self.invocar = crear_lambda(
+            self.repo, Mock(), self.shadow,
+            publicador_eventos=self.publicador,
+            obtener_pista=proveedor_anterior,
+        )
+        self.reportado.pop("idPartida")
+        for cantidad in (1, 2):
+            self.assertIn("PRUEBA &lt;anterior&gt; &amp; texto", self.solicitar())
+            self.assertEqual(proveedor_anterior.call_args, call("memoria"))
+            self.assertEqual(proveedor_anterior.call_count, cantidad)
+            self.assertEqual(self.publicador.publicar_pista.call_count, cantidad)
+            self.assertNotIn("progresoPistas", self.atributos)
 
     def test_cambio_desafio_reinicia_incluso_al_volver(self):
         self.solicitar()
