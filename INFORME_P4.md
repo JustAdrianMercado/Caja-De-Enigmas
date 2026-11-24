@@ -1249,7 +1249,7 @@ Cada caso indica el requerimiento que verifica. Las horas son de La Paz, del reg
 | ID | Valor declarado | Procedimiento | Resultado medido | ¿Cumple? |
 |---|---|---|---|---|
 | RNF-1 Estabilidad | 2 h sin reinicios no provocados | Registro serial continuo; un retroceso de `millis()` indica un reinicio. | **3 h** (13:05 a 16:06), con 15 partidas y 8 cortes de red. Un solo reinicio: la carga del firmware 0.4.1, hecha a propósito. | Sí |
-| RNF-2 Exactitud del HC-SR04 | Error ≤ 1 cm | Cuaderno a 10, 20 y 30 cm medidos con regla; comando `sensores`, una lectura por segundo. | **10 cm:** 10 de 10 lecturas en 10 cm. **20 cm:** 16 de 16 en 20 cm. **30 cm:** 7 de 7 en 30 cm. Error de 0 cm y dispersión de 0 cm con el cuaderno quieto. Mientras se acomodaba, aparecieron lecturas sueltas de 49, 62 y 79 cm. | Sí |
+| RNF-2 Exactitud del HC-SR04 | Error ≤ 1 cm | Cuaderno a 10, 20 y 30 cm medidos con regla; comando `sensores`, una lectura por segundo. | **10 cm:** 10 de 10 lecturas en 10 cm. **20 cm:** 16 de 16 en 20 cm. **30 cm:** 7 de 7 en 30 cm. Error de 0 cm y dispersión de 0 cm con el cuaderno quieto. El [registro serial](docs/evidencias/p4/pruebas/registro-serial.log) también muestra lecturas puntuales de 49, 62 y 79 cm fuera de esas series. | Sí |
 | RNF-2 Exactitud de la LDR | Distinguir tres niveles | La LDR tapada con la mano, con luz ambiente y con la linterna de un celular. | **Tapada:** de 15 a 16 % (ADC de 638 a 666). **Ambiente:** de 72 a 76 % (ADC de 2 960 a 3 108). **Linterna:** de 79 a 94 % (ADC de 3 271 a 3 873). | Sí, con una observación (sección 4.6) |
 | RNF-3 Respuesta del Edge | ≤ 100 ms | Diferencia de `tsObjeto` entre `desafio_superado` (luz) y `cerradura abierta`, en las 12 partidas resueltas. | **De 11 a 12 ms** en las 12 partidas, incluida la que se jugó sin red. | Sí |
 | RNF-4 Respuesta por voz | ≤ 2 s | Inicio de la Lambda en CloudWatch frente al movimiento del servo (`tsObjeto` del evento). | **Abrir:** 0,23 s. **Cerrar:** entre 0,2 y 1,2 s; el Shadow guarda la hora con resolución de 1 s (`desired` a las 13:27:08 y `reported` a las 13:27:09). | Sí, con 2 muestras |
@@ -1281,8 +1281,8 @@ En total, la caja estuvo unos **44 min sin nube**, el 25 % de la sesión. Nunca 
 | Problema | Causa | Solución | Estado |
 |---|---|---|---|
 | Los 4 pulsadores leían "presionado" todo el tiempo, y el LED rojo marcaba error sin parar en la memoria. | La señal y GND estaban en la misma fila del pulsador, y esas patas están unidas por dentro. | Se movió GND a la fila del otro lado de cada pulsador. Se encontró con el comando `sensores`. | Resuelto. La [guía de montaje](docs/GUIA_MONTAJE.md#montaje-de-la-práctica-4) y el diagrama se actualizaron en el commit `dd179b7`. |
-| La primera vez, el desafío de distancia tardó 147,5 s. | El HC-SR04 devolvía "sin eco" con la mano inclinada o muy cerca del borde del cono. | Usar una superficie plana y paralela al sensor. Después se resolvió en 3 a 19 s. | Resuelto en el uso. Se recomienda un filtro (sección 7). |
-| Lecturas sueltas de 49, 62 y 79 cm mientras se movía el objeto. | Rebotes del ultrasonido. | No afectan al juego, que exige 2 s seguidos en rango. | Aceptado |
+| La primera vez, el desafío de distancia tardó 147,5 s. | En ese intento se observaron lecturas «sin eco» con la mano inclinada o cerca del borde del cono. | Usar una superficie plana y paralela al sensor. Después se resolvió en 3 a 19 s. | Resuelto en el uso. |
+| Lecturas puntuales de 49, 62 y 79 cm fuera de las series de calibración con el cuaderno quieto. | Sin causa determinada. | El desafío exige lecturas válidas dentro del rango durante 2 s seguidos. | Las tres series de calibración cumplieron el requisito de exactitud. |
 | La luz ambiente de la sala (72 a 76 %) supera el umbral por defecto (70 %), así que el desafío de luz se supera casi al instante (mediana de 1,6 s). | El umbral se fijó sin medir la sala. | Subir el umbral a 85 % por voz ("ajusta el umbral de luz a ochenta y cinco"), entre la luz ambiente y la linterna. | Detectado con los datos; se aplica con RF14. |
 | Tras reconectar, una publicación QoS 1 falló (14:20:19). | La red del hotspot recién arrancaba. | El firmware cierra la conexión y vuelve a conectarse; el reporte se reenvió en 9 s. | Resuelto por diseño |
 | Fallos de DNS y TLS en el hotspot (cortes 2 a 5). | Internet del celular inestable. | Reintentos cada 5 s. Sin pérdida de eventos. | Resuelto por diseño |
@@ -1394,7 +1394,7 @@ El cómputo de Lambda es el 0,4 % de los 400 000 GB-s gratuitos. La vigilancia c
 
 **Técnicas, para el prototipo:**
 - Subir el umbral de luz a 85 % en esta sala, o calibrarlo al iniciar cada partida con la luz ambiente más un margen.
-- Filtrar el HC-SR04 con la mediana de 5 muestras, para eliminar los rebotes de 49 a 79 cm.
+- Incluir en las instrucciones del desafío de distancia que el jugador mantenga la palma abierta y paralela al sensor durante 2 s dentro del rango indicado por el LED verde. Para verificar la exactitud del HC-SR04, tomar las lecturas con una superficie plana y quieta a una distancia medida con regla.
 - Guardar la cola de eventos en la NVS, para que sobreviva a un corte de energía.
 - Subir la memoria de la Lambda de almacenamiento a 256 MB, para reducir el arranque en frío por debajo de 5 s.
 - Usar una escritura condicional (`attribute_not_exists(ts)`) y un sufijo único, para que dos eventos del mismo milisegundo no se pisen.
