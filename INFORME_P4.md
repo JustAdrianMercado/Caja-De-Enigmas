@@ -105,10 +105,10 @@ RF1 a RF9 son los de la Práctica 3, aplicados a todos los sensores y actuadores
 | RNF-5 | Frecuencia de reporte | Cada cambio se reporta en ≤ 1 s, y hay un reporte completo de respaldo cada 60 ± 5 s. | Registro serial. |
 | RNF-6 | Integridad del almacenamiento | ≥ 99 % de los mensajes publicados queda en DynamoDB, y el 100 % de los inválidos se descarta. | Registro serial frente a DynamoDB. |
 | RNF-7 | Latencia del almacenamiento | ≤ 5 s desde que el objeto genera el dato hasta que queda guardado. | `tsObjeto`, `tsRegla` y `tsGuardado` de cada ítem. |
-| RNF-8 | Respuesta de la regla de la Nube | ≤ 20 min (umbral de 15 min más el período de 5 min) desde la última lectura hasta la alerta, sin alertas falsas por cortes menores a 15 min. | GSI `alertas-por-fecha`. |
+| RNF-8 | Respuesta de la regla de la Nube | Si una caja pasa 20 min o más sin reportar, la alerta aparece a más tardar 20 min después de su última lectura (15 min de umbral más 5 min de período). Un corte de 15 a 20 min puede no detectarse, según cuándo corra la revisión. Un corte de menos de 15 min nunca genera alerta. | GSI `alertas-por-fecha`. |
 | RNF-9 | Operación sin conexión | El juego y el servo siguen funcionando. Hasta 20 eventos se guardan en una cola y se publican en orden al volver la red. Las lecturas tomadas sin red no se guardan. | Corte del WiFi durante una partida. |
 | RNF-10 | Reconexión y sincronización | La caja se reconecta sola y aplica el `desired` pendiente en ≤ 5 s después de conectarse. | Registro serial y del Shadow. |
-| RNF-11 | Costo | Una caja encendida todo el mes entra en la capa gratuita, y fuera de ella cuesta menos de USD 1. | Métricas de CloudWatch. |
+| RNF-11 | Costo | Una caja encendida todo el mes cuesta menos de USD 1, aun sin capa gratuita. | Métricas de CloudWatch y precios de lista de us-east-1. |
 
 **Frecuencia de reporte, justificada** ([contrato §3.3](docs/contratos.md#33-frecuencia-de-reporte)):
 - **Por evento:** cada cambio de cerradura, partida, modo o parámetros se reporta en ≤ 1 s, y cada evento del juego se publica en el momento. El juego produce hechos discretos que el operador y la skill necesitan ver enseguida.
@@ -149,7 +149,7 @@ El ESP32 concentra la lógica del juego. Los sensores entran por pines de entrad
 
 ```mermaid
 flowchart LR
-    U(["Jugador u operador"]) -- voz --> ECHO["Dispositivo Echo"]
+    U(["Jugador u operador"]) -- voz --> ECHO["Simulador de Alexa<br/>(o dispositivo Echo)"]
     ECHO --> ASK["Alexa Skills Kit<br/>skill caja de enigmas"]
     ASK --> LS["Lambda caja-enigmas-skill<br/>(backend de la skill)"]
 
@@ -337,7 +337,7 @@ classDiagram
 
 Las tres funciones separan la lógica, que se prueba sin AWS, de los adaptadores que usan `boto3`.
 
-**Backend de la skill (`caja-enigmas-skill`).** Cada intent tiene su manejador. Los que actúan sobre una caja heredan de `IntentCajaHandler`, que primero resuelve la vinculación del `userId` (RF8) y después llama a `mensaje_para_caja()`.
+**Backend de la skill (`caja-enigmas-skill`).** Cada intent tiene su manejador. Los de juego, modo, parámetros y sensores heredan de `IntentCajaHandler`, que primero resuelve la vinculación del `userId` (RF8) y después llama a `mensaje_para_caja()`. Los de la cerradura y la vinculación resuelven la caja en su propio `handle()`.
 
 ```mermaid
 classDiagram
@@ -793,21 +793,23 @@ Shadow clásico, sin nombre. La especificación completa, con ejemplos, está en
 - **La dificultad fija `longitudSecuencia` y `toleranciaCm`, que solo se reportan.** La distancia objetivo y el umbral de luz son de calibración y se cambian por separado, así no se pisan.
 - **El modo, la dificultad, los parámetros y los contadores se guardan en la NVS.** Después de un reinicio sin red, la caja sigue configurada igual y no repite un `idPartida`.
 
-**Documento real de `caja-enigmas-01` al final de las pruebas** (código de vinculación ocultado):
+**Documento real de `caja-enigmas-01` al final de las pruebas**, leído con `GetThingShadow` el 24/11 después de la partida 15 (código de vinculación ocultado):
 
 ```json
 {
-  "desired": { "modo": "juego", "dificultad": "facil", "distanciaObjetivoCm": 20, "solicitudPartida": 4 },
+  "desired": { "modo": "juego", "dificultad": "normal", "distanciaObjetivoCm": 20, "solicitudPartida": 4 },
   "reported": {
-    "cerradura": "abierta", "modo": "juego", "dificultad": "facil",
+    "cerradura": "abierta", "modo": "juego", "dificultad": "normal",
     "distanciaObjetivoCm": 20, "umbralLuzPorcentaje": 70, "solicitudPartida": 4,
-    "longitudSecuencia": 3, "toleranciaCm": 6,
-    "estadoPartida": "resuelta", "desafioActual": "ninguno", "idPartida": 14,
-    "distanciaCm": 17, "luzPorcentaje": 76,
+    "longitudSecuencia": 4, "toleranciaCm": 4,
+    "estadoPartida": "resuelta", "desafioActual": "ninguno", "idPartida": 15,
+    "distanciaCm": 6, "luzPorcentaje": 75,
     "codigoVinculacion": "****", "firmware": "0.4.1"
   }
 }
 ```
+
+La dificultad normal, con su secuencia de 4 y su tolerancia de 4 cm, es la orden que se dio por voz con la caja sin red (sección 4.5, RNF-10).
 
 `desired` y `reported` coinciden en los atributos que tienen en común, así que no hay `delta`: la caja aplicó todas las órdenes.
 
@@ -855,7 +857,7 @@ El modelo parte de los **patrones de acceso** de los mockups y de la lógica de 
 - **`thingName` como clave de partición:** todas las consultas son por caja, excepto la 6, y así los datos de cada usuario quedan separados.
 - **Una sola tabla de histórico:** los patrones 1 a 5 son por caja y por rango de fechas, así que una sola `Query` trae lecturas y eventos juntos. Tablas separadas obligarían a hacer dos consultas.
 - **GSI disperso:** la única consulta entre cajas es la de alertas. Como solo las alertas tienen `categoriaAlerta`, el índice es pequeño y no se paga por indexar las lecturas.
-- **TTL solo en las lecturas:** son el 68 % de los ítems y solo sirven unos días. Los eventos son pocos y sostienen las estadísticas.
+- **TTL solo en las lecturas:** son el 67 % de los ítems y solo sirven unos días. Los eventos son pocos y sostienen las estadísticas.
 - ***On-demand*:** el tráfico es bajo y llega en ráfagas durante las partidas, así que no conviene reservar capacidad.
 
 **Ítems reales del 24/11** ([muestra completa](docs/evidencias/p4/datos/muestra-historico.json)):
@@ -904,7 +906,7 @@ FROM 'caja-enigmas/+/eventos'
 | Función | Responsabilidad | Disparador | Recursos a los que accede | Frecuencia |
 |---|---|---|---|---|
 | `caja-enigmas-skill` | Backend de la skill. | Alexa Skills Kit, con verificación del Skill ID | Shadow (lee `reported` y escribe `desired`), `CajaEnigmasVinculaciones` y el tema de eventos (pistas) | Una vez por frase |
-| `caja-enigmas-almacenamiento` | Validar, enriquecer y guardar. | Las dos reglas de IoT | `PutItem` en `CajaEnigmasHistorico` | Una vez por mensaje válido de la regla (unas 1 660 por día y por caja) |
+| `caja-enigmas-almacenamiento` | Validar, enriquecer y guardar. | Las dos reglas de IoT | `PutItem` en `CajaEnigmasHistorico` | Una vez por cada mensaje que pasa una regla, válido o no (unas 1 660 por día y por caja) |
 | `caja-enigmas-vigilancia` | Lógica de la Nube: caja sin reportar. | EventBridge, `rate(5 minutes)` | `ListThings`, y `Query` y `PutItem` en `CajaEnigmasHistorico` | 288 por día, sin importar cuántas cajas haya |
 
 **Por qué tres funciones y no una:**
@@ -1007,6 +1009,8 @@ docs/                     Contratos, diagramas, mockups, guías y evidencias
 - **`EventoJson` escribe solo los campos de cada tipo.** La Lambda de almacenamiento valida todos los campos que llegan, y un campo de más con un valor fuera de rango (por ejemplo, `intentos: 0`) haría descartar el evento entero.
 
 - **Configuración sin secretos:** el endpoint, el certificado, la clave privada y el WiFi viven en `firmware/include/ConfiguracionAws.h` y `ConfiguracionWifi.h`, que están en `.gitignore`. El repositorio solo tiene las plantillas [ConfiguracionAws.ejemplo.h](firmware/include/ConfiguracionAws.ejemplo.h) y [ConfiguracionWifi.ejemplo.h](firmware/include/ConfiguracionWifi.ejemplo.h).
+- **Código del reed de la P3:** `SensorTapa`, `PinReedTapa` y `firmware/pruebas/reed/` se conservan porque el [informe de la P3](INFORME.md) los cita. El firmware de la P4 no los usa: `main.cpp` no crea ningún `SensorTapa`.
+- **Comandos de banco:** `abrir` y `cerrar` de la consola serial mueven el servo en cualquier modo y no generan eventos. Sirven solo para probar el montaje con la placa conectada a la PC; en la sesión se usaron una vez, a las 13:05, antes de las pruebas. En la operación normal no hay consola, y la convivencia de la sección 2.7 se mantiene.
 - **Firmware 0.4.1:** agrega a la consola serial el comando `sensores`, que imprime cada segundo la distancia, la luz y el estado de los pulsadores. Se usó para calibrar (sección 4.5) y para encontrar el error de cableado de los pulsadores (sección 4.6).
 
 ### 3.3 Código de las funciones Lambda
@@ -1047,7 +1051,7 @@ Las tres funciones son *serverless*, en Python 3.12, y siguen PEP 8 con nombres 
 | `PublicarSusEventos` | `iot:Publish` en `caja-enigmas/<su Thing>/eventos`. | Nuevo en la v2. Por eso la regla de eventos puede tomar el `thingName` del tema sin confiar en el payload. |
 | `SuscribirseASuShadow` | `iot:Subscribe` en `$aws/things/<su Thing>/shadow/*`. | Suscribirse a `update/delta` y `get/accepted`. |
 
-Ya es la política mínima: no usa comodines entre Things, y el objeto no puede suscribirse al tema de eventos ni leerlo.
+No usa comodines entre Things, y el objeto no puede suscribirse al tema de eventos ni leerlo. Pero no es del todo mínima: `shadow/*` también permite borrar el Shadow (`shadow/delete`) y usar Shadows con nombre. En producción bastaría con `shadow/update`, `shadow/get` y sus respuestas (`accepted`, `rejected` y `update/delta`).
 
 ### 3.5 Configuración de las reglas de AWS IoT
 
@@ -1064,7 +1068,7 @@ Este es el mínimo privilegio que pide la consigna para una regla (`lambda:Invok
 | Función | Runtime y recursos | Variables de entorno | Rol |
 |---|---|---|---|
 | `caja-enigmas-skill` | Python 3.12, 128 MB, 10 s | `TABLA_VINCULACIONES`, `PREFIJO_THING`, `IOT_ENDPOINT` | `caja-enigmas-lambda-rol` |
-| `caja-enigmas-almacenamiento` | Python 3.12, 128 MB, 15 s | `TABLA_HISTORICO` | `caja-enigmas-almacenamiento-role-…`, creado por la consola |
+| `caja-enigmas-almacenamiento` | Python 3.12, 128 MB, 15 s | `TABLA_HISTORICO` | `caja-enigmas-almacenamiento-role-l861lr23`, creado por la consola |
 | `caja-enigmas-vigilancia` | Python 3.12, 128 MB, 30 s | `TABLA_HISTORICO`, `PREFIJO_THING`, `MINUTOS_SIN_REPORTE=15` | `caja-enigmas-vigilancia-rol` |
 
 Ningún código tiene access keys: cada función usa las credenciales temporales de su rol.
@@ -1076,11 +1080,11 @@ Ningún código tiene access keys: cada función usa las credenciales temporales
 | Skill ([política](config/aws/politica-rol-lambda.json)) | `iot:GetThingShadow`, `iot:UpdateThingShadow`, `iot:DescribeThing` | `thing/caja-enigmas-*` | Leer `reported`, escribir `desired` y comprobar que la caja existe al vincular. El comodín cubre todas las cajas, porque cada usuario tiene la suya. | Ya es el mínimo. |
 | Skill | `dynamodb:GetItem`, `PutItem`, `DeleteItem` | `CajaEnigmasVinculaciones` | Resolver, crear y borrar el vínculo. | Ya es el mínimo. |
 | Skill | `iot:Publish` | `topic/caja-enigmas/caja-enigmas-*/eventos` | Publicar los eventos `pista`. | Ya es el mínimo. |
-| Skill | Política administrada `AWSLambdaBasicExecutionRole` | Logs | Escribir en CloudWatch. | **Más amplia de lo necesario:** permite escribir en cualquier grupo de logs. En producción conviene limitarla a `/aws/lambda/caja-enigmas-skill`, como ya lo hace la consola en las otras dos funciones. |
+| Skill | Política administrada `AWSLambdaBasicExecutionRole` | Logs | Escribir en CloudWatch. | **Más amplia de lo necesario:** permite escribir en cualquier grupo de logs. En producción conviene limitarla a `/aws/lambda/caja-enigmas-skill`. |
 | Almacenamiento ([política](config/aws/politica-rol-almacenamiento.json)) | `dynamodb:PutItem` | `CajaEnigmasHistorico` | Guardar el ítem. | Ya es el mínimo. |
 | Almacenamiento | `dynamodb:DescribeTable` | `CajaEnigmasHistorico` | Se agregó al crear la política, pero el código no lo usa. | **Sobra:** se puede quitar. |
-| Almacenamiento | `logs:CreateLogGroup`, `CreateLogStream`, `PutLogEvents` | Solo su grupo de logs | Registrar cada mensaje procesado. | Ya es el mínimo. |
-| Vigilancia | Ver la sección 3.8. | | | |
+| Almacenamiento ([política de logs](config/aws/politica-rol-almacenamiento-logs.json)) | `logs:CreateLogStream`, `PutLogEvents` y `logs:CreateLogGroup` | Los dos primeros, solo su grupo de logs. `CreateLogGroup`, cualquier grupo de la cuenta en us-east-1. | Registrar cada mensaje procesado. Es la política que genera la consola. | Limitar `CreateLogGroup` a `/aws/lambda/caja-enigmas-almacenamiento`. |
+| Vigilancia | Ver la sección 3.8. | — | — | — |
 
 ### 3.7 Tablas de DynamoDB
 
@@ -1089,7 +1093,7 @@ Ningún código tiene access keys: cada función usa las credenciales temporales
 | `CajaEnigmasVinculaciones` | *On-demand* | `userId` | — | [tabla-vinculaciones.json](config/aws/tabla-vinculaciones.json) |
 | `CajaEnigmasHistorico` | *On-demand*, clase Standard | `thingName` y `ts` | GSI `alertas-por-fecha` (`categoriaAlerta`, `ts`, proyección `ALL`). TTL activo sobre `expiraEn`. | [tabla-historico.json](config/aws/tabla-historico.json) |
 
-El 24/11 a las 15:30, `CajaEnigmasHistorico` tenía 288 ítems (45 KB), y el GSI tenía 2 alertas. Al terminar las pruebas, el GSI tenía 3.
+Según `DescribeTable`, cuyo conteo AWS actualiza cada unas 6 horas, `CajaEnigmasHistorico` tenía 288 ítems (45 KB) el 24/11. Al terminar las pruebas, el GSI tenía 3 alertas.
 
 ### 3.8 Lambda de vigilancia y regla programada
 
@@ -1104,13 +1108,13 @@ El 24/11 a las 15:30, `CajaEnigmasHistorico` tenía 288 ítems (45 KB), y el GSI
 
 | Permiso | Recurso | Por qué |
 |---|---|---|
-| `logs:CreateLogGroup`, `CreateLogStream`, `PutLogEvents` | Su propio grupo de logs | Registrar cada revisión. |
+| `logs:CreateLogStream`, `PutLogEvents` y `logs:CreateLogGroup` | Los dos primeros, su propio grupo de logs. `CreateLogGroup`, cualquier grupo de la cuenta en us-east-1. | Registrar cada revisión. |
 | `iot:ListThings` | `*` | Revisar también las cajas que nunca reportaron. Esta acción no admite permisos por recurso. |
 | `dynamodb:Query`, `dynamodb:PutItem` | Solo la tabla `CajaEnigmasHistorico` | Leer la última lectura y guardar la alerta. No puede borrar ni modificar ítems. |
 
 - La regla de EventBridge **no usa un rol IAM**: invoca la función con el permiso basado en recursos que la consola agrega al crear el disparador.
 - A diferencia del ejemplo de la consigna, esta Lambda **no necesita `iot:UpdateThingShadow`**, porque no actúa sobre el objeto.
-- Los permisos asignados **ya son los mínimos de producción**. La única mejora posible sería reemplazar `ListThings` por un grupo de Things, si hubiera muchas cajas.
+- Los permisos de IoT y de DynamoDB ya son los mínimos de producción. En los logs, `CreateLogGroup` debería limitarse a `/aws/lambda/caja-enigmas-vigilancia`. La otra mejora posible sería reemplazar `ListThings` por un grupo de Things, si hubiera muchas cajas.
 
 ### 3.9 Configuración de Alexa
 
@@ -1132,14 +1136,16 @@ El 24/11 a las 15:30, `CajaEnigmasHistorico` tenía 288 ítems (45 KB), y el GSI
 
 **Sesión de pruebas:** martes 24/11/2026, de 13:05 a 16:06 (hora de La Paz, UTC−4), con `caja-enigmas-01`, el firmware 0.4.1 y el hotspot de un celular en 2,4 GHz.
 
-**Hoja de pruebas (PDF):** los resultados de la sesión también están resumidos en una hoja de 4 páginas, [Hoja_Pruebas_P4_Caja_Enigmas.pdf](docs/evidencias/p4/pruebas/Hoja_Pruebas_P4_Caja_Enigmas.pdf). Tiene las pruebas del juego, de voz y de la nube, las lecturas de los sensores, las mediciones y los problemas encontrados. Las cifras coinciden con las de las secciones 4.4 a 4.6, que dan el detalle de cada prueba.
+**Hoja de pruebas (PDF):** los resultados de la sesión también están resumidos en una hoja, [Hoja_Pruebas_P4_Caja_Enigmas.pdf](docs/evidencias/p4/pruebas/Hoja_Pruebas_P4_Caja_Enigmas.pdf). Tiene las pruebas del juego, de voz y de la nube, las lecturas de los sensores, las mediciones y los problemas encontrados. Las cifras coinciden con las de las secciones 4.4 a 4.6, que dan el detalle de cada prueba.
 
 **Instrumentos:**
-- **Registro serial** de la caja, con la hora de la PC en cada línea: 8 700 líneas ([registro](docs/evidencias/p4/pruebas/registro-serial.log)).
+- **Registro serial** de la caja, con la hora de la PC en cada línea: 8 845 líneas ([registro](docs/evidencias/p4/pruebas/registro-serial.log)).
 - **Registro de cambios del Shadow**, consultado cada pocos segundos ([registro](docs/evidencias/p4/pruebas/registro-shadow.log)).
 - **Simulador de Alexa:** la Developer Console y `ask smapi simulate-skill` ([registro](docs/evidencias/p4/pruebas/pruebas-voz.log)).
 - **DynamoDB:** `Query` de todo el día para `caja-enigmas-01` ([datos](docs/evidencias/p4/datos/historico-caja-enigmas-01-24-11.json)) y del GSI de alertas.
 - **CloudWatch:** invocaciones, errores y duración de las Lambdas, y mensajes y fallos de las reglas.
+
+**Hora del registro de voz:** cada línea lleva la hora en que llegó la respuesta del simulador, unos segundos después del envío. Las horas de los efectos (servo, Shadow) salen del registro serial y del registro del Shadow. Tres envíos no tuvieron respuesta útil (15:41:02, 15:41:20 y 15:43:43): los dos primeros se mandaron sin una sesión de la skill abierta, y el tercero no devolvió resultado. Se repitieron dentro de una sesión abierta (P-18).
 
 **Relojes:** los eventos traen `tsObjeto`, que es la hora NTP del ESP32. El reloj de la PC iba 1,68 s adelantado y se corrigió con la mediana de las diferencias entre cada evento impreso y su `tsObjeto`.
 
@@ -1175,6 +1181,39 @@ Se probaron 114 frases y 6 diálogos con Utterance Profiler, sobre el modelo com
 | `IniciarPartidaIntent` | 6 | 6 | `ConsultarParametrosIntent` | 6 | 6 |
 | `PedirPistaIntent` | 6 | 6 | `ConsultarSensoresIntent` | 16 | 16 |
 
+Esas 114 frases son las frases de ejemplo del propio modelo, así que la tabla es una **prueba de regresión**: confirma que ningún cambio rompió un intent. Para medir si la skill entiende frases que no están en el modelo, el 24/11 se probaron **20 frases nuevas** con `ask smapi profile-nlu`, que usa el mismo reconocimiento que el simulador:
+
+| Frase nueva | Intent esperado | Intent reconocido | Resultado |
+|---|---|---|---|
+| abre la caja por favor | `AbrirCerraduraIntent` | `AbrirCerraduraIntent` | Correcto |
+| quiero abrir la cerradura ahora | `AbrirCerraduraIntent` | `AbrirCerraduraIntent` | Correcto |
+| cierra la cerradura por favor | `CerrarCerraduraIntent` | `CerrarCerraduraIntent` | Correcto |
+| empieza una partida nueva | `IniciarPartidaIntent` | `IniciarPartidaIntent` | Correcto |
+| vamos a jugar | `IniciarPartidaIntent` | `IniciarPartidaIntent` | Correcto |
+| no sé qué hacer dame una ayuda con el desafío | `PedirPistaIntent` | `AMAZON.FallbackIntent` | **Falla** |
+| en qué parte del juego estoy | `ConsultarProgresoIntent` | `ConsultarParametrosIntent` | **Falla** |
+| pon el modo manual | `CambiarModoIntent` (`manual`) | `CambiarModoIntent` (`manual`) | Correcto |
+| cambia a modo juego | `CambiarModoIntent` (`juego`) | `CambiarModoIntent` (`juego`) | Correcto |
+| qué modo tiene la caja | `ConsultarModoIntent` | `ConsultarModoIntent` | Correcto |
+| sube la dificultad a difícil | `CambiarDificultadIntent` (`dificil`) | `CambiarDificultadIntent` (`dificil`) | Correcto |
+| pon la dificultad fácil | `CambiarDificultadIntent` (`facil`) | `CambiarDificultadIntent` (`facil`) | Correcto |
+| cambia la distancia objetivo a veinte centímetros | `CambiarParametroIntent`, valor 20 | `CambiarParametroIntent`, valor sin reconocer | **Falla el slot** |
+| pon el umbral de luz en ochenta por ciento | `CambiarParametroIntent`, valor 80 | `CambiarParametroIntent`, valor sin reconocer | **Falla el slot** |
+| qué parámetros tiene el juego | `ConsultarParametrosIntent` | `ConsultarModoIntent` | **Falla** |
+| cuánto mide el sensor de luz | `ConsultarSensoresIntent` | `ConsultarSensoresIntent` | Correcto |
+| a qué distancia está mi mano | `ConsultarSensoresIntent` | `AMAZON.FallbackIntent` | **Falla** |
+| está abierta la caja | `ConsultarCerraduraIntent` | `ConsultarCerraduraIntent` | Correcto |
+| borra mi caja | `DesvincularCajaIntent` | `DesvincularCajaIntent` | Correcto |
+| vincula la caja uno con el código uno dos tres cuatro | `VincularCajaIntent` (1 y 1234) | `VincularCajaIntent` (1 y 1234) | Correcto |
+
+**Resultado con frases nuevas:** 16 de 20 activaron el intent correcto (80 %), y 14 de 20 quedaron completas, con sus slots (70 %). Las fallas muestran dónde ampliar el modelo:
+- pedir ayuda con el desafío sin decir "pista";
+- distinguir "progreso" de "parámetros";
+- decir la distancia de la mano;
+- números con unidad ("centímetros", "por ciento"), que dejan el slot `valor` vacío.
+
+En ese último caso, la skill no escribe nada en el Shadow y responde con el rango válido, porque `cambiar_parametro.py` rechaza un valor vacío. Las frases que fallaron se proponen como nuevas frases de ejemplo (sección 7).
+
 **Evolución:** en la primera compilación del 23/11, 82 de 88 frases acertaron. Seis consultas caían en `AMAZON.FallbackIntent`, y "cuánta luz tiene mi caja" activaba `DesvincularCajaIntent`. Se agregaron y reemplazaron frases hasta llegar a 114 de 114.
 
 ### 4.4 Pruebas funcionales en la caja real
@@ -1192,13 +1231,13 @@ Cada caso indica el requerimiento que verifica. Las horas son de La Paz, del reg
 | P-07 | RF14 | "En qué modo está la caja" y "cuáles son los parámetros del juego". | Alexa lee `reported`. | 14:16:12: modo juego. 14:17:36: dificultad fácil, secuencia de 3, tolerancia de 6 cm, distancia de 20 cm y umbral del 70 %. | Cumple |
 | P-08 | RF5, RF3 | En modo manual: "abre la cerradura" y "cierra la cerradura". En modo juego: "abre la cerradura". | En manual, el servo se mueve y se registra `origen: voz`. En juego, Alexa rechaza la orden sin escribir `desired`. | En manual, abrió a las 13:27:00 y cerró a las 13:27:08, las dos veces con `origen: voz`. En juego (14:16:30), Alexa respondió "La caja está en modo juego: hay que resolver los desafíos o pasarla a modo manual", y `desired.cerradura` no cambió. | Cumple |
 | P-09 | RF3, RF14 | "Inicia una partida", en modo juego. | `desired.solicitudPartida` sube en 1 y la caja inicia una partida con `origen: voz`. | Las partidas 1, 8, 9 y 10 se iniciaron por voz. | Cumple |
-| P-10 | Pistas | "Dame una pista" tres veces durante la memoria, y otra vez sin partida en curso. | Pistas 1, 2 y 3 de memoria, con un evento `pista` por cada una. Sin partida, Alexa lo explica y no hay evento. | 13:32: tres pistas progresivas, y 4 eventos `pista` en DynamoDB. 15:40:26: "No hay una partida en curso para pedir una pista", sin evento. | Cumple |
+| P-10 | Pistas | "Dame una pista" tres veces durante la memoria, y otra vez sin partida en curso. | Pistas 1, 2 y 3 de memoria, con un evento `pista` por cada una. Sin partida, Alexa lo explica y no hay evento. | 13:32: tres pistas progresivas. DynamoDB tiene 4 eventos `pista`: esas tres y una de las 13:29. 15:40:26: "No hay una partida en curso para pedir una pista", sin evento. | Cumple |
 | P-11 | RF6 | "Cómo está la cerradura". | Alexa lee `reported.cerradura`. | 14:19:10: "La cerradura de tu caja está abierta", igual que en el Shadow. | Cumple |
 | P-12 | RF7, RF8, RF9 | Vincular con un código incorrecto y con una caja que no existe; abrir otra sesión. | Alexa rechaza los dos casos y el vínculo anterior se mantiene. | 14:18:14: "El código de vinculación es incorrecto". 14:18:32: "La caja indicada no existe en AWS IoT Core". 14:18:52: la sesión nueva sigue con `caja-enigmas-01`. | Cumple |
 | P-13 | RF11 | Reportar en el Shadow de `caja-enigmas-02` `distanciaCm = 999`, fuera del rango de 2 a 400. | La regla invoca la Lambda, que descarta el mensaje y no escribe. | 14:14: el mensaje se descartó y no se creó ningún ítem. | Cumple |
 | P-14 | RF10, RF11, RF12 | Comparar el registro serial con DynamoDB. | Cada reporte con lecturas y cada evento quedan guardados, con `thingName` y `ts`. | 94 de 94 eventos y 182 de 182 lecturas. Todas las lecturas tienen `expiraEn`. | Cumple |
 | P-15 | RF4 | "Qué distancia marca mi caja" y "dime la distancia y la luz". | Alexa lee `distanciaCm` y `luzPorcentaje` de `reported`. | 15:39:33: "La distancia es de 17 centímetros. La luz es de 76 por ciento", igual que en el Shadow. Los casos con lecturas que faltan los cubren 11 pruebas automatizadas. | Cumple |
-| P-16 | RF8 | Varias cajas: cada cuenta usa su propia caja. | Cada usuario actúa solo sobre su caja. | La cuenta de Adrián resuelve `caja-enigmas-01`, y Mateo probó la skill con `caja-enigmas-02` ([capturas](docs/evidencias/mateo-lambda/para-informe/)). Cada dato del histórico se guarda con su `thingName`. | Cumple |
+| P-16 | RF8 | Varias cajas: cada cuenta usa su propia caja. | Cada usuario actúa solo sobre su caja. | `CajaEnigmasVinculaciones` tiene 2 cuentas de Alexa vinculadas, las dos a `caja-enigmas-01` desde la P3. En la P4 no se probaron dos cuentas con cajas distintas a la vez. La resolución por `userId` está cubierta por las pruebas automatizadas de la skill, y cada dato del histórico se guarda con su `thingName`. | Parcial |
 | P-17 | RF15 | Calcular los indicadores del mockup con los datos reales. | Cada cifra del panel sale de un `Query` por caja y fecha, o del GSI. | Sección 5.1. | Cumple |
 | P-18 | Intents integrados | "Ayuda", una pregunta fuera de tema y "para". | Ayuda explica las operaciones, Fallback reconduce la conversación y Stop la cierra. | 15:40:44: "Ayuda" explicó las operaciones disponibles. 15:44:02 y 15:44:20: dos preguntas fuera de tema activaron `AMAZON.FallbackIntent`, que responde "No entendí esa petición" y explica qué se puede pedir. 15:44:38: "para" activó `AMAZON.StopIntent`, que respondió "Hasta luego". | Cumple |
 
@@ -1212,11 +1251,11 @@ Cada caso indica el requerimiento que verifica. Las horas son de La Paz, del reg
 | RNF-2 Exactitud del HC-SR04 | Error ≤ 1 cm | Cuaderno a 10, 20 y 30 cm medidos con regla; comando `sensores`, una lectura por segundo. | **10 cm:** 10 de 10 lecturas en 10 cm. **20 cm:** 16 de 16 en 20 cm. **30 cm:** 7 de 7 en 30 cm. Error de 0 cm y dispersión de 0 cm con el cuaderno quieto. Mientras se acomodaba, aparecieron lecturas sueltas de 49, 62 y 79 cm. | Sí |
 | RNF-2 Exactitud de la LDR | Distinguir tres niveles | La LDR tapada con la mano, con luz ambiente y con la linterna de un celular. | **Tapada:** de 15 a 16 % (ADC de 638 a 666). **Ambiente:** de 72 a 76 % (ADC de 2 960 a 3 108). **Linterna:** de 79 a 94 % (ADC de 3 271 a 3 873). | Sí, con una observación (sección 4.6) |
 | RNF-3 Respuesta del Edge | ≤ 100 ms | Diferencia de `tsObjeto` entre `desafio_superado` (luz) y `cerradura abierta`, en las 12 partidas resueltas. | **De 11 a 12 ms** en las 12 partidas, incluida la que se jugó sin red. | Sí |
-| RNF-4 Respuesta por voz | ≤ 2 s | Inicio de la Lambda en CloudWatch frente al movimiento del servo (`tsObjeto` del evento). | **Abrir:** 0,23 s. **Cerrar:** menos de 1 s (`desired` a las 13:27:08 y `reported` a las 13:27:09). | Sí, con 2 muestras |
+| RNF-4 Respuesta por voz | ≤ 2 s | Inicio de la Lambda en CloudWatch frente al movimiento del servo (`tsObjeto` del evento). | **Abrir:** 0,23 s. **Cerrar:** entre 0,2 y 1,2 s; el Shadow guarda la hora con resolución de 1 s (`desired` a las 13:27:08 y `reported` a las 13:27:09). | Sí, con 2 muestras |
 | RNF-5 Frecuencia de reporte | Cambio en ≤ 1 s; respaldo cada 60 ± 5 s | Tiempo entre cada cambio impreso por la caja y su "Shadow: reportado". | **Cambio a reporte:** promedio de 0,35 s y máximo de 0,78 s (34 de 34 en ≤ 1 s). **Respaldo:** mediana de 60,3 s, entre 58,96 y 62,61 s (115 intervalos). Los 6 intervalos más largos (de 92 a 379 s) coinciden con los cortes de red. | Sí |
-| RNF-6 Integridad | ≥ 99 %; 100 % de los inválidos descartados | Cada evento y cada reporte del registro serial, contra los ítems de DynamoDB. | **Eventos:** 94 de 94 guardados (100 %), incluidos los 7 de la partida sin red. **Lecturas:** 182 de 182 reportes con su ítem (100 %), hasta la consulta de las 16:06. Ningún fallo en las reglas ni errores en la Lambda (CloudWatch). El mensaje inválido de la prueba P-13 se descartó. | Sí |
+| RNF-6 Integridad | ≥ 99 %; 100 % de los inválidos descartados | Cada evento y cada reporte del registro serial, contra los ítems de DynamoDB. | **Eventos:** 94 de 94 guardados (100 %), incluidos los 7 de la partida sin red. **Lecturas:** 182 de 182 reportes con su ítem (100 %), hasta la consulta de las 16:06. DynamoDB tiene 200 lecturas del día: las 18 de más son de antes de que empezara el registro serial (13:05) o de los minutos de la recarga del firmware, sin línea en el registro. Ningún fallo en las reglas ni errores en la Lambda (CloudWatch). El mensaje inválido de la prueba P-13 se descartó. | Sí |
 | RNF-7 Latencia del almacenamiento | ≤ 5 s | `tsGuardado − tsObjeto` en los eventos y `tsGuardado − tsRegla` en todos los ítems. | **Eventos publicados con conexión:** promedio de 1,05 s y máximo de 4,45 s (87 de 87 en ≤ 5 s). **Regla a guardado:** mediana de 0,12 s. **12 de 298 ítems (4 %)** tardaron entre 6,4 y 7,5 s, en 4 arranques en frío de la Lambda: el primer mensaje del día, uno a las 14:58 y los primeros mensajes después de los dos cortes largos. Los 7 eventos de la partida sin red se guardaron entre 17 y 27 s después de ocurrir, porque esperaron en la cola; eso es lo esperado sin red. | Parcial: 96 % de los ítems (sección 4.6) |
-| RNF-8 Regla de la Nube | ≤ 20 min, sin alertas falsas | Caja prendida y sin red durante más de 15 min (corte 7). La regla corre cada 5 min. | Última lectura a las **15:29:20,6**. La condición (15 min sin lecturas) se cumplió a las 15:44:20,6, y la alerta se guardó a las **15:48:15,5**, con `minutosSinReporte: 18`. Eso da **18 min 55 s** desde la última lectura y 3 min 55 s desde que se cumplió la condición. Los otros 7 cortes, todos menores a 15 min 30 s, **no dieron alertas falsas**. | Sí |
+| RNF-8 Regla de la Nube | ≤ 20 min, sin alertas falsas | Caja prendida y sin red durante más de 15 min (corte 7). La regla corre cada 5 min. | Última lectura a las **15:29:20,6**. La condición (15 min sin lecturas) se cumplió a las 15:44:20,6, y la alerta se guardó a las **15:48:15,5**, con `minutosSinReporte: 18`. Eso da **18 min 55 s** desde la última lectura y 3 min 55 s desde que se cumplió la condición. Los 6 cortes de menos de 15 min **no dieron alertas falsas**. En el corte 8 pasaron 16 min 03 s sin lecturas (de 15:48:44 a 16:04:47): la revisión de las 16:03:15 vio 14,5 min y no alertó, y la de las 16:08:15 ya encontró la caja conectada. Es el caso de 15 a 20 min que el valor declarado admite. | Sí |
 | RNF-9 Operación sin conexión | El juego sigue y los eventos se encolan | Corte del WiFi durante una partida. | Corte 8: el WiFi se perdió a las 15:49:25 y se jugó la **partida 15 completa sin red**, de 16:04:28 a 16:04:38. El servo cerró al iniciar y abrió al resolver, con 12 ms de respuesta. Los **7 eventos** quedaron en la cola. Al volver la red, se publicaron **en orden** en 2,2 s (de 16:04:49,3 a 16:04:51,5), y los 7 están en DynamoDB con su `tsObjeto` original. La partida usó la dificultad fácil guardada en la caja, porque la orden de pasar a normal todavía no había llegado. | Sí |
 | RNF-10 Reconexión | Reconexión sola y `desired` pendiente aplicado en ≤ 5 s | Con la caja sin red, cambiar por voz la distancia objetivo (corte 2) y la dificultad (corte 8), y volver a conectar. | **8 de 8 reconexiones automáticas** (tabla siguiente). Dos órdenes dadas por voz con la caja sin red se aplicaron al reconectar: **30 cm**, 0,8 s después de conectarse (14:20:16,4), y la **dificultad normal**, 0,6 s después de conectarse (16:04:49,3). La caja reportó la longitud de secuencia de 4 y la tolerancia de 4 cm que corresponden a normal. | Sí (2 ensayos con orden pendiente) |
 | RNF-11 Costo | Dentro de la capa gratuita; < USD 1 por mes | Métricas de CloudWatch del 24/11, llevadas a un mes de uso. | Unos USD 0,25 por mes y por caja sin capa gratuita (sección 5.3). | Sí |
@@ -1256,7 +1295,7 @@ En total, la caja estuvo unos **44 min sin nube**, el 25 % de la sesión. Nunca 
 
 ### 5.1 Indicadores del juego obtenidos de DynamoDB
 
-Se consultó `CajaEnigmasHistorico` con los patrones 1 a 4 del mockup (`Query` por `thingName = caja-enigmas-01` y el día 24/11, todas las páginas, a las 16:06): **299 ítems**, 200 lecturas, 98 eventos y 1 alerta. Son los mismos cálculos que mostraría el panel del operador, así que el modelo de datos entrega la información de los mockups.
+Se consultó `CajaEnigmasHistorico` con los patrones 1 a 4 del mockup (`Query` por `thingName = caja-enigmas-01` y el día 24/11, todas las páginas, a las 16:06): **299 ítems**, 200 lecturas, 98 eventos y 1 alerta. Los 98 eventos son los 94 que publicó la caja más las 4 pistas que publicó la skill. Son los mismos cálculos que mostraría el panel del operador, así que el modelo de datos entrega la información de los mockups.
 
 | Indicador del panel | Valor del 24/11 |
 |---|---|
@@ -1287,7 +1326,7 @@ Se consultó `CajaEnigmasHistorico` con los patrones 1 a 4 del mockup (`Query` p
 | RNF-5 | ≤ 1 s y 60 ± 5 s | 0,35 s y 60,3 s | Cumple |
 | RNF-6 | ≥ 99 % | 100 % (94 eventos y 182 lecturas) | Cumple |
 | RNF-7 | ≤ 5 s | Con conexión, eventos en 1,05 s de promedio y 4,45 s de máximo. El 96 % de todos los ítems en ≤ 5 s | Parcial: 4 arranques en frío de 6,4 a 7,5 s |
-| RNF-8 | ≤ 20 min | 18 min 55 s, sin alertas falsas | Cumple |
+| RNF-8 | ≤ 20 min con la caja caída 20 min o más | 18 min 55 s, sin alertas falsas | Cumple |
 | RNF-9 | El juego sigue sin red | Partida completa sin red; 7 eventos publicados en orden al volver | Cumple |
 | RNF-10 | ≤ 5 s tras conectar | 0,6 y 0,8 s; 8 de 8 reconexiones | Cumple |
 | RNF-11 | < USD 1 por mes | ≈ USD 0,25 por mes | Cumple |
@@ -1304,7 +1343,7 @@ Se consultó `CajaEnigmasHistorico` con los patrones 1 a 4 del mockup (`Query` p
 | Regla `CajaEnigmasLecturas` | 208 mensajes recibidos y 0 fallos de la acción |
 | Regla `CajaEnigmasEventos` | 91 mensajes recibidos y 0 fallos de la acción |
 
-**Escenario de un mes** para una caja encendida todo el día, con 20 partidas diarias: 1 440 reportes periódicos más unos 11 eventos por partida dan unos **1 660 mensajes por día y 49 800 por mes**.
+**Escenario de un mes** para una caja encendida todo el día, con 20 partidas diarias: 1 440 reportes periódicos más unos 11 mensajes por partida (7 eventos y unos 4 reportes del Shadow) dan unos **1 660 mensajes por día y 49 800 por mes**.
 
 | Servicio | Escenario mensual para una caja | Comparación |
 |---|---|---|
@@ -1312,9 +1351,24 @@ Se consultó `CajaEnigmasHistorico` con los patrones 1 a 4 del mockup (`Query` p
 | AWS Lambda | Unas 49 800 invocaciones de almacenamiento, suponiendo que cada publicación pasa una de las reglas. La vigilancia suma 8 640. En conjunto, 58 440 invocaciones, más la skill, pistas y reintentos. | Son el 5,84 % de la referencia mensual de un millón de solicitudes. El límite de cómputo es 400 000 GB-s y requiere medir duración y memoria. [Precios de AWS Lambda](https://aws.amazon.com/lambda/pricing/) |
 | Amazon DynamoDB | Unas 49 800 escrituras de mensajes válidos más alertas, y al menos 8 640 consultas de vigilancia si se supervisa una caja. A eso se suman las vinculaciones, los reportes y la paginación. | En modo bajo demanda, los 25 RCU y 25 WCU de la capa gratuita se refieren a capacidad aprovisionada. Como referencia, 49 800 escrituras de hasta 1 KB representan unos USD 0,031 a la tarifa de USD 0,625 por millón de unidades de escritura. DynamoDB Standard publica una referencia de 25 GB gratuitos de almacenamiento. [Precios de DynamoDB](https://aws.amazon.com/dynamodb/pricing/) |
 
-Esta estimación refleja el escenario de una caja. Para confirmar el costo real, falta revisar el consumo agregado, las operaciones de Shadow, los ítems y las páginas leídas, y la elegibilidad de la cuenta. AWS publica un programa de créditos para clientes nuevos desde el 15/07/2025. [Programa AWS Free Tier](https://aws.amazon.com/free/)
+La estimación es para una caja. Con más cajas, el almacenamiento y los mensajes crecen en proporción, y la vigilancia no cambia. Las cuentas creadas desde el 15/07/2025 reciben créditos en lugar de los límites gratuitos de 12 meses ([programa AWS Free Tier](https://aws.amazon.com/free/)). Aun sin capa gratuita, el costo queda muy por debajo de USD 1 al mes.
 
-**Con las duraciones medidas,** el cómputo de Lambda sería de unos 1 500 GB-s por mes (49 800 × 0,098 s × 0,125 GB, más 8 640 × 0,805 s × 0,125 GB de la vigilancia). Es el 0,4 % de los 400 000 GB-s gratuitos. Sin capa gratuita, la suma de IoT Core, Lambda y DynamoDB a los precios de lista de us-east-1 queda en **unos USD 0,25 por mes y por caja**. La vigilancia cuesta lo mismo con 1 o con 50 cajas, porque se invoca por tiempo y no por mensaje.
+**Costo sin capa gratuita**, con las duraciones medidas y los precios de lista de us-east-1 (enlazados en la tabla anterior). Es un mes de una caja:
+
+| Concepto | Cantidad mensual | Precio de lista | Costo |
+|---|---|---|---|
+| IoT Core: mensajes (publicaciones y respuestas del Shadow) | ≈ 100 000 | USD 1,00 por millón | USD 0,100 |
+| IoT Core: operaciones del Shadow | ≈ 45 000 | USD 1,25 por millón | USD 0,056 |
+| IoT Core: reglas ejecutadas y acciones | ≈ 49 800 + 49 800 | USD 0,15 por millón cada uno | USD 0,015 |
+| IoT Core: conexión | 43 200 min | USD 0,08 por millón de minutos | USD 0,003 |
+| Lambda: solicitudes | ≈ 59 000 | USD 0,20 por millón | USD 0,012 |
+| Lambda: cómputo | ≈ 1 500 GB-s (49 800 × 0,098 s × 0,125 GB, más 8 640 × 0,805 s × 0,125 GB) | USD 0,0000166667 por GB-s | USD 0,025 |
+| DynamoDB: escrituras | ≈ 49 800 unidades | USD 0,625 por millón | USD 0,031 |
+| DynamoDB: lecturas de la vigilancia | ≈ 8 640 unidades | USD 0,125 por millón | USD 0,001 |
+| DynamoDB: almacenamiento | < 10 MB, con el TTL de 30 días | USD 0,25 por GB-mes | USD 0,003 |
+| **Total** | | | **≈ USD 0,25 al mes** |
+
+El cómputo de Lambda es el 0,4 % de los 400 000 GB-s gratuitos. La vigilancia cuesta lo mismo con 1 o con 50 cajas, porque se invoca por tiempo y no por mensaje.
 
 ### 5.4 Análisis crítico de la decisión Edge / Nube
 
@@ -1325,10 +1379,10 @@ Esta estimación refleja el escenario de una caja. Para confirmar el costo real,
 
 ## 6. Conclusiones
 
-1. **Se cumplen RF1 a RF15 sobre la caja real.** El juego, la voz, el Shadow, las reglas, las tres Lambdas y las dos tablas funcionaron juntos en una sesión de 3 h, con 15 partidas.
+1. **Se cumplen RF1 a RF15.** El juego, la voz, el Shadow, las reglas, las tres Lambdas y las dos tablas funcionaron juntos en la caja real, en una sesión de 3 h con 15 partidas. La parte de varios usuarios (RF8) se verificó con dos cuentas vinculadas y con pruebas automatizadas, pero no con dos cajas distintas a la vez.
 2. **El almacenamiento es íntegro y rápido:** se guardó el 100 % de los mensajes (94 eventos y 182 lecturas). Con conexión, los eventos tardaron 1,05 s en promedio en guardarse. La validación descartó el mensaje inválido sin escribirlo. El punto débil son los arranques en frío de la Lambda, que llevaron el 4 % de los ítems por encima de los 5 s.
 3. **El modelo de datos responde a los patrones de acceso.** Con una sola `Query` por caja y por día se calcularon todos los indicadores del panel (sección 5.1). El GSI disperso resuelve la única consulta entre cajas, y el TTL limita el volumen de lecturas.
-4. **La decisión Edge / Nube quedó justificada con mediciones:** 12 ms de respuesta en el Edge, y una partida completa jugada sin red. La Nube resuelve lo que el objeto no puede: detectó la caja desconectada a los 18 min 55 s de su última lectura, dentro de los 20 min declarados, y sin alertas falsas en los cortes cortos.
+4. **La decisión Edge / Nube quedó justificada con mediciones:** 12 ms de respuesta en el Edge, y una partida completa jugada sin red. La Nube resuelve lo que el objeto no puede: detectó la caja desconectada a los 18 min 55 s de su última lectura, dentro de los 20 min declarados, y no dio alertas falsas en los cortes de menos de 15 min.
 5. **Separar las funciones permitió el mínimo privilegio.** El almacenamiento solo escribe en su tabla y la vigilancia no puede tocar los Shadows. Solo sobran `DescribeTable` y los logs amplios de la skill.
 6. **La reconexión es robusta:** la caja se recuperó sola de 8 cortes (44 min en total). Aplicó las dos órdenes dadas sin red menos de 1 s después de conectarse, y publicó en orden los 7 eventos de la cola, sin perder ninguno.
 7. **El costo es despreciable:** unos USD 0,25 por mes y por caja sin capa gratuita.
@@ -1533,7 +1587,7 @@ El prefijo de cada caso indica el intent. En las pruebas de control de la cerrad
 | Pruebas de voz con el simulador | [pruebas-voz.log](docs/evidencias/p4/pruebas/pruebas-voz.log) |
 | Ítems de DynamoDB del 24/11 y muestra de cada tipo | [historico-caja-enigmas-01-24-11.json](docs/evidencias/p4/datos/historico-caja-enigmas-01-24-11.json), [muestra-historico.json](docs/evidencias/p4/datos/muestra-historico.json) |
 | Capturas de Utterance Profiler | [docs/evidencias/alexa-p4/](docs/evidencias/alexa-p4/) |
-| Capturas de Lambda, DynamoDB, Shadow y CloudWatch | [docs/evidencias/mateo-lambda/para-informe/](docs/evidencias/mateo-lambda/para-informe/) |
+| Capturas de Lambda, DynamoDB, Shadow y CloudWatch de la **P3** (09 y 10/11), anteriores al Shadow v2 | [docs/evidencias/mateo-lambda/para-informe/](docs/evidencias/mateo-lambda/para-informe/) |
 | Fotos del montaje | [docs/evidencias/p4/montaje/](docs/evidencias/p4/montaje/) |
 
 ### 8.5 Documentos de apoyo

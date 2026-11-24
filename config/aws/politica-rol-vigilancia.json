@@ -5,13 +5,13 @@
       "Sid": "CrearSuGrupoDeLogs",
       "Effect": "Allow",
       "Action": "logs:CreateLogGroup",
-      "Resource": "arn:aws:logs:us-east-1:977308215256:*"
+      "Resource": "arn:aws:logs:us-east-1:<ID_CUENTA>:*"
     },
     {
       "Sid": "EscribirSusLogs",
       "Effect": "Allow",
       "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
-      "Resource": "arn:aws:logs:us-east-1:977308215256:log-group:/aws/lambda/caja-enigmas-vigilancia:*"
+      "Resource": "arn:aws:logs:us-east-1:<ID_CUENTA>:log-group:/aws/lambda/caja-enigmas-vigilancia:*"
     },
     {
       "Sid": "ListarLasCajas",
@@ -23,7 +23,7 @@
       "Sid": "LeerYGuardarEnElHistorico",
       "Effect": "Allow",
       "Action": ["dynamodb:Query", "dynamodb:PutItem"],
-      "Resource": "arn:aws:dynamodb:us-east-1:977308215256:table/CajaEnigmasHistorico"
+      "Resource": "arn:aws:dynamodb:us-east-1:<ID_CUENTA>:table/CajaEnigmasHistorico"
     }
   ]
 }

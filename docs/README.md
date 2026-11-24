@@ -1,7 +1,9 @@
 # Documentación de la Caja de los Enigmas
 
-El [informe técnico](../INFORME.md) es la referencia principal del proyecto.
-Describe la implementación, las pruebas y sus límites de medición.
+**Práctica 4:** el informe es [INFORME_P4.md](../INFORME_P4.md). Su material propio está en la [consigna de la P4](consigna/Práctica_4.md), el [contrato v2](contratos.md), los [mockups](mockups/README.md), los [diagramas de circuito](diagramas/), la [planificación de la P4](planificacion/p4-00-resumen.md) y las [evidencias de la P4](evidencias/p4/), que incluyen la [hoja de pruebas en PDF](evidencias/p4/pruebas/Hoja_Pruebas_P4_Caja_Enigmas.pdf).
+
+**Práctica 3:** el [informe técnico](../INFORME.md) es la referencia principal de la P3.
+Describe la implementación, las pruebas y sus límites de medición. La tabla siguiente corresponde a la P3.
 
 | Material complementario | Finalidad |
 |---|---|

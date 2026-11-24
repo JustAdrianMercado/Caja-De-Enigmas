@@ -1,4 +1,3 @@
-
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -10,7 +9,7 @@
         "iot:UpdateThingShadow",
         "iot:DescribeThing"
       ],
-      "Resource": "arn:aws:iot:us-east-1:977308215256:thing/caja-enigmas-*"
+      "Resource": "arn:aws:iot:us-east-1:<ID_CUENTA>:thing/caja-enigmas-*"
     },
     {
       "Sid": "AccesoDynamoDB",
@@ -20,7 +19,13 @@
         "dynamodb:PutItem",
         "dynamodb:DeleteItem"
       ],
-      "Resource": "arn:aws:dynamodb:us-east-1:977308215256:table/CajaEnigmasVinculaciones"
+      "Resource": "arn:aws:dynamodb:us-east-1:<ID_CUENTA>:table/CajaEnigmasVinculaciones"
+    },
+    {
+      "Sid": "PublicarEventosPistas",
+      "Effect": "Allow",
+      "Action": "iot:Publish",
+      "Resource": "arn:aws:iot:us-east-1:<ID_CUENTA>:topic/caja-enigmas/caja-enigmas-*/eventos"
     }
   ]
 }
