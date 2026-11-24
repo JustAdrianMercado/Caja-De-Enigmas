@@ -1,0 +1,25 @@
+14:15:54	«abre caja de enigmas»	LaunchRequest	Bienvenido a Caja de los Enigmas. Tu caja caja-enigmas-01 está vinculada. Puedes iniciar una partida, consultar el progreso o cambiar el modo y los parámetros.
+14:16:12	«en qué modo está la caja»	ConsultarModoIntent	Según el último reporte, la caja está en modo juego.
+14:16:30	«abre la cerradura»	AbrirCerraduraIntent	La caja está en modo juego: hay que resolver los desafíos o pasarla a modo manual.
+14:16:57	«cambia la distancia objetivo a cincuenta»	CambiarParametroIntent	La distancia objetivo en centímetros debe ser un número entero entre 10 y 40.
+14:17:15	«cambia la distancia objetivo a treinta»	CambiarParametroIntent	Envié la solicitud. Está pendiente de confirmación de la caja; consulta el estado reportado para comprobar el resultado.
+14:17:36	«cuáles son los parámetros del juego»	ConsultarParametrosIntent	Según el último reporte, dificultad fácil; longitud de secuencia: 3; tolerancia en centímetros: 6; distancia objetivo en centímetros: 20; umbral de luz en porcentaje: 70.
+14:18:14	«vincula mi caja uno con el código ****»	VincularCajaIntent	El código de vinculación es incorrecto.
+14:18:32	«vincula mi caja nueve con el código ****»	VincularCajaIntent	La caja indicada no existe en AWS IoT Core.
+14:18:52	«abre caja de enigmas»	LaunchRequest	Bienvenido a Caja de los Enigmas. Tu caja caja-enigmas-01 está vinculada. Puedes iniciar una partida, consultar el progreso o cambiar el modo y los parámetros.
+14:19:10	«cómo está la cerradura»	ConsultarCerraduraIntent	Según el último reporte, la cerradura de tu caja está abierta.
+14:21:43	«abre caja de enigmas»	LaunchRequest	Bienvenido a Caja de los Enigmas. Tu caja caja-enigmas-01 está vinculada. Puedes iniciar una partida, consultar el progreso o cambiar el modo y los parámetros.
+14:22:01	«cambia la distancia objetivo a veinte»	CambiarParametroIntent	Envié la solicitud. Está pendiente de confirmación de la caja; consulta el estado reportado para comprobar el resultado.
+15:38:56	«abre caja de enigmas»	LaunchRequest	Bienvenido a Caja de los Enigmas. Tu caja caja-enigmas-01 está vinculada. Puedes iniciar una partida, consultar el progreso o cambiar el modo y los parámetros.
+15:39:15	«cambia el umbral de luz a cinco»	CambiarParametroIntent	La umbral de luz en porcentaje debe ser un número entero entre 10 y 95.
+15:39:33	«qué distancia marca mi caja»	ConsultarSensoresIntent	Según el último reporte de tu caja: la distancia es de 17 centímetros. La luz es de 76 por ciento.
+15:39:51	«dime la distancia y la luz»	ConsultarSensoresIntent	Según el último reporte de tu caja: la distancia es de 17 centímetros. La luz es de 76 por ciento.
+15:40:09	«cómo voy»	ConsultarProgresoIntent	Según el último reporte, la partida está resuelta.
+15:40:26	«quiero una pista»	PedirPistaIntent	No hay una partida en curso para pedir una pista.
+15:40:44	«ayuda»	AMAZON.HelpIntent	Puedes vincular tu caja indicando su número y su código de cuatro dígitos. Después puedes iniciar una partida, pedir pistas, consultar el progreso, el modo, los parámetros o la cerradura y cambiar el modo, la dificultad y los parámetros. En modo manual puedes abrir o cerrar la cerradura. También puedes desvincular tu caja. Para cambiar de caja, vincula la nueva con su número y código.
+15:41:02	«cuéntame un chiste»	SessionEndedRequest	
+15:41:20	«para»		
+15:43:43	«abre caja de enigmas»		
+15:44:02	«cuéntame un chiste»	AMAZON.FallbackIntent	No entendí esa petición. Puedes vincular tu caja indicando su número y su código de cuatro dígitos. Después puedes iniciar una partida, pedir pistas, consultar el progreso, el modo, los parámetros o la cerradura y cambiar el modo, la dificultad y los parámetros. En modo manual puedes abrir o cerrar la cerradura. También puedes desvincular tu caja. Para cambiar de caja, vincula la nueva con su número y código.
+15:44:20	«cuál es la capital de francia»	AMAZON.FallbackIntent	No entendí esa petición. Puedes vincular tu caja indicando su número y su código de cuatro dígitos. Después puedes iniciar una partida, pedir pistas, consultar el progreso, el modo, los parámetros o la cerradura y cambiar el modo, la dificultad y los parámetros. En modo manual puedes abrir o cerrar la cerradura. También puedes desvincular tu caja. Para cambiar de caja, vincula la nueva con su número y código.
+15:44:38	«para»	AMAZON.StopIntent	Hasta luego.

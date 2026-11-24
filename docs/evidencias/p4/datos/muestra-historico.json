@@ -1,0 +1,118 @@
+{
+  "descripcion": "Un ítem de cada tipo de CajaEnigmasHistorico (caja-enigmas-01, 24/11/2026) y las alertas del GSI alertas-por-fecha.",
+  "items": [
+    {
+      "thingName": "caja-enigmas-01",
+      "tipo": "lectura",
+      "tsGuardado": 1795539128171,
+      "expiraEn": 1798131128,
+      "tsRegla": 1795539121192,
+      "luzPorcentaje": 78,
+      "ts": "2026-11-24T16:52:01.192Z#lectura"
+    },
+    {
+      "thingName": "caja-enigmas-01",
+      "tipo": "evento",
+      "cerradura": "abierta",
+      "tsGuardado": 1795541221763,
+      "tsObjeto": "2026-11-24T17:27:00.868Z",
+      "evento": "cerradura",
+      "origen": "voz",
+      "tsRegla": 1795541221659,
+      "ts": "2026-11-24T17:27:00.868Z#cerradura"
+    },
+    {
+      "thingName": "caja-enigmas-01",
+      "tipo": "evento",
+      "idPartida": 1,
+      "tsGuardado": 1795541334952,
+      "tsObjeto": "2026-11-24T17:28:53.510Z",
+      "evento": "partida_iniciada",
+      "dificultad": "facil",
+      "origen": "voz",
+      "tsRegla": 1795541334837,
+      "ts": "2026-11-24T17:28:53.510Z#partida_iniciada"
+    },
+    {
+      "thingName": "caja-enigmas-01",
+      "tipo": "evento",
+      "tsGuardado": 1795541349267,
+      "desafio": "memoria",
+      "evento": "pista",
+      "origen": "voz",
+      "tsRegla": 1795541349157,
+      "ts": "2026-11-24T17:29:09.157Z#pista"
+    },
+    {
+      "tipo": "evento",
+      "thingName": "caja-enigmas-01",
+      "idPartida": 3,
+      "intentos": 1,
+      "duracionMs": 6015,
+      "tsGuardado": 1795542948443,
+      "desafio": "memoria",
+      "tsObjeto": "2026-11-24T17:55:47.722Z",
+      "evento": "desafio_superado",
+      "tsRegla": 1795542948333,
+      "ts": "2026-11-24T17:55:47.722Z#desafio_superado"
+    },
+    {
+      "thingName": "caja-enigmas-01",
+      "tipo": "evento",
+      "idPartida": 3,
+      "duracionMs": 155354,
+      "tsGuardado": 1795543100077,
+      "tsObjeto": "2026-11-24T17:58:17.084Z",
+      "evento": "partida_resuelta",
+      "tsRegla": 1795543099990,
+      "ts": "2026-11-24T17:58:17.084Z#partida_resuelta"
+    },
+    {
+      "tipo": "evento",
+      "thingName": "caja-enigmas-01",
+      "idPartida": 5,
+      "tsGuardado": 1795543198998,
+      "tsObjeto": "2026-11-24T17:59:58.685Z",
+      "desafio": "memoria",
+      "evento": "desafio_fallado",
+      "tsRegla": 1795543198921,
+      "ts": "2026-11-24T17:59:58.685Z#desafio_fallado"
+    },
+    {
+      "thingName": "caja-enigmas-01",
+      "tipo": "alerta",
+      "categoriaAlerta": "sin_reporte",
+      "minutosSinReporte": 18,
+      "tsGuardado": 1795549695467,
+      "ultimaLectura": "2026-11-24T19:29:20.603Z",
+      "ts": "2026-11-24T19:48:15.467Z#alerta"
+    }
+  ],
+  "alertas": [
+    {
+      "thingName": "caja-enigmas-01",
+      "minutosSinReporte": 18,
+      "tsGuardado": 1795549695467,
+      "ts": "2026-11-24T19:48:15.467Z#alerta",
+      "ultimaLectura": "2026-11-24T19:29:20.603Z",
+      "categoriaAlerta": "sin_reporte",
+      "tipo": "alerta"
+    },
+    {
+      "thingName": "caja-enigmas-01",
+      "tsGuardado": 1795443803053,
+      "ts": "2026-11-23T14:23:23.053Z#alerta",
+      "categoriaAlerta": "sin_reporte",
+      "tipo": "alerta"
+    },
+    {
+      "thingName": "caja-enigmas-02",
+      "tsGuardado": 1795443803053,
+      "ts": "2026-11-23T14:23:23.053Z#alerta",
+      "minutosSinReporte": 1048,
+      "categoriaAlerta": "sin_reporte",
+      "ultimaLectura": "2026-11-22T20:55:13.308Z",
+      "tipo": "alerta"
+    }
+  ]
+}
