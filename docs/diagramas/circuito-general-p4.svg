@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1720" height="1344" viewBox="0 0 1720 1344" role="img" aria-labelledby="titulo descripcion">
   <title id="titulo">Circuito general de la Caja de los Enigmas — Caja de los Enigmas</title>
-  <desc id="descripcion">Montaje real desde micro-USB, con dos protoboards de 63 filas a ambos lados de un ESP32 DOIT DevKit V1. La protoboard 2 está a la izquierda; contiene el HC-SR04, divisor ECHO, LDR y conexiones del SG90 externo. La protoboard 1 a la derecha contiene los LEDs y cuatro pulsadores. Se muestran los contactos físicos de cada rama, la distribución de 3V3, VIN y los rieles de masa común. Las posiciones de los cables dentro de los rieles y el orden de los terminales del ESP32 se representan de forma esquemática.</desc>
+  <desc id="descripcion">Montaje real desde micro-USB, con dos protoboards de 63 filas a ambos lados de un ESP32 DOIT DevKit V1. La protoboard 2 está a la izquierda; contiene el HC-SR04, divisor ECHO, LDR y conexiones del SG90 externo. La protoboard 1 a la derecha contiene los LEDs y cuatro pulsadores con retorno a GND en h42, h47, h52 y h57. Se muestran los contactos físicos de cada rama, la distribución de 3V3, VIN y los rieles de masa común. Las posiciones de los cables dentro de los rieles y el orden de los terminales del ESP32 se representan de forma esquemática.</desc>
   <defs><style>
     text{font-family:"Segoe UI",Arial,sans-serif;fill:#172c43}
     .sobre{font-size:14px;font-weight:700;letter-spacing:1.8px;fill:#276394}
@@ -2074,69 +2074,69 @@
   <circle cx="1281" cy="572.9" r="4" fill="#276ba6" stroke="none" stroke-width="2"/>
   <circle cx="1281" cy="638.4" r="4" fill="#276ba6" stroke="none" stroke-width="2"/>
   <path d="M1301 703.9 H1341" class="tira dig"/>
-  <path d="M1384 703.9 H1424" class="tira gnd"/>
+  <path d="M1384 730.1 H1424" class="tira gnd"/>
   <path d="M1030 703.9 H1301" class="puente"/><path d="M1030 703.9 H1301" class="cable dig" data-conexion="D13 → c40"/>
   <circle cx="1301" cy="703.9" r="4" fill="#276ba6" stroke="none" stroke-width="2"/>
-  <path d="M1424 703.9 H1446 Q1451 703.9 1451 709.9 V736.1 Q1451 741.1 1446 741.1 H1242" class="puente"/><path d="M1424 703.9 H1446 Q1451 703.9 1451 709.9 V736.1 Q1451 741.1 1446 741.1 H1242" class="cable gnd" data-conexion="h40 → riel azul izquierdo"/>
-  <circle cx="1424" cy="703.9" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
+  <path d="M1424 730.1 H1446 Q1451 730.1 1451 736.1 Q1451 741.1 1446 741.1 H1242" class="puente"/><path d="M1424 730.1 H1446 Q1451 730.1 1451 736.1 Q1451 741.1 1446 741.1 H1242" class="cable gnd" data-conexion="h42 → riel azul izquierdo"/>
+  <circle cx="1424" cy="730.1" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
   <circle cx="1242" cy="741.1" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
   <rect x="1334" y="696.9" width="57" height="40.200000000000045" rx="5" class="fisico"/>
-  <path d="M1341 703.9 V730.1" class="cable dig" data-conexion="e40 ↔ e42"/>
-  <path d="M1384 703.9 V730.1" class="cable gnd" data-conexion="f40 ↔ f42"/>
-  <path d="M1341 703.9 h8 l26 15 M1379 703.9 h5" class="linea"/>
+  <path d="M1341 703.9 H1384" class="cable dig" data-conexion="e40 ↔ f40 (polo de señal)"/>
+  <path d="M1341 730.1 H1384" class="cable gnd" data-conexion="e42 ↔ f42 (polo GND)"/>
+  <path d="M1362.5 703.9 l13 18" class="linea"/><circle cx="1362.5" cy="703.9" r="2.6" class="borne"/><circle cx="1362.5" cy="730.1" r="2.6" class="borne"/>
   <circle cx="1341" cy="703.9" r="3" class="borne"/>
   <circle cx="1384" cy="703.9" r="3" class="borne"/>
   <circle cx="1341" cy="730.1" r="3" class="borne"/>
   <circle cx="1384" cy="730.1" r="3" class="borne"/>
-  <text x="1550" y="691.9" class="micro" text-anchor="start">Rojo</text>
+  <text x="1550" y="691.9" class="micro" text-anchor="start">Rojo · GND h42</text>
   <path d="M1301 769.4 H1341" class="tira dig"/>
-  <path d="M1384 769.4 H1424" class="tira gnd"/>
+  <path d="M1384 795.6 H1424" class="tira gnd"/>
   <path d="M1030 769.4 H1301" class="puente"/><path d="M1030 769.4 H1301" class="cable dig" data-conexion="D14 → c45"/>
   <circle cx="1301" cy="769.4" r="4" fill="#276ba6" stroke="none" stroke-width="2"/>
-  <path d="M1424 769.4 H1446 Q1451 769.4 1451 775.4 V801.6 Q1451 806.6 1446 806.6 H1242" class="puente"/><path d="M1424 769.4 H1446 Q1451 769.4 1451 775.4 V801.6 Q1451 806.6 1446 806.6 H1242" class="cable gnd" data-conexion="h45 → riel azul izquierdo"/>
-  <circle cx="1424" cy="769.4" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
+  <path d="M1424 795.6 H1446 Q1451 795.6 1451 801.6 Q1451 806.6 1446 806.6 H1242" class="puente"/><path d="M1424 795.6 H1446 Q1451 795.6 1451 801.6 Q1451 806.6 1446 806.6 H1242" class="cable gnd" data-conexion="h47 → riel azul izquierdo"/>
+  <circle cx="1424" cy="795.6" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
   <circle cx="1242" cy="806.6" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
   <rect x="1334" y="762.4" width="57" height="40.200000000000045" rx="5" class="fisico"/>
-  <path d="M1341 769.4 V795.6" class="cable dig" data-conexion="e45 ↔ e47"/>
-  <path d="M1384 769.4 V795.6" class="cable gnd" data-conexion="f45 ↔ f47"/>
-  <path d="M1341 769.4 h8 l26 15 M1379 769.4 h5" class="linea"/>
+  <path d="M1341 769.4 H1384" class="cable dig" data-conexion="e45 ↔ f45 (polo de señal)"/>
+  <path d="M1341 795.6 H1384" class="cable gnd" data-conexion="e47 ↔ f47 (polo GND)"/>
+  <path d="M1362.5 769.4 l13 18" class="linea"/><circle cx="1362.5" cy="769.4" r="2.6" class="borne"/><circle cx="1362.5" cy="795.6" r="2.6" class="borne"/>
   <circle cx="1341" cy="769.4" r="3" class="borne"/>
   <circle cx="1384" cy="769.4" r="3" class="borne"/>
   <circle cx="1341" cy="795.6" r="3" class="borne"/>
   <circle cx="1384" cy="795.6" r="3" class="borne"/>
-  <text x="1550" y="757.4" class="micro" text-anchor="start">Amarillo</text>
+  <text x="1550" y="757.4" class="micro" text-anchor="start">Amarillo · GND h47</text>
   <path d="M1301 834.9 H1341" class="tira dig"/>
-  <path d="M1384 834.9 H1424" class="tira gnd"/>
+  <path d="M1384 861.1 H1424" class="tira gnd"/>
   <path d="M1030 834.9 H1301" class="puente"/><path d="M1030 834.9 H1301" class="cable dig" data-conexion="RX2 · GPIO16 → c50"/>
   <circle cx="1301" cy="834.9" r="4" fill="#276ba6" stroke="none" stroke-width="2"/>
-  <path d="M1424 834.9 H1446 Q1451 834.9 1451 840.9 V867.1 Q1451 872.1 1446 872.1 H1242" class="puente"/><path d="M1424 834.9 H1446 Q1451 834.9 1451 840.9 V867.1 Q1451 872.1 1446 872.1 H1242" class="cable gnd" data-conexion="h50 → riel azul izquierdo"/>
-  <circle cx="1424" cy="834.9" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
+  <path d="M1424 861.1 H1446 Q1451 861.1 1451 867.1 Q1451 872.1 1446 872.1 H1242" class="puente"/><path d="M1424 861.1 H1446 Q1451 861.1 1451 867.1 Q1451 872.1 1446 872.1 H1242" class="cable gnd" data-conexion="h52 → riel azul izquierdo"/>
+  <circle cx="1424" cy="861.1" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
   <circle cx="1242" cy="872.1" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
   <rect x="1334" y="827.9" width="57" height="40.200000000000045" rx="5" class="fisico"/>
-  <path d="M1341 834.9 V861.1" class="cable dig" data-conexion="e50 ↔ e52"/>
-  <path d="M1384 834.9 V861.1" class="cable gnd" data-conexion="f50 ↔ f52"/>
-  <path d="M1341 834.9 h8 l26 15 M1379 834.9 h5" class="linea"/>
+  <path d="M1341 834.9 H1384" class="cable dig" data-conexion="e50 ↔ f50 (polo de señal)"/>
+  <path d="M1341 861.1 H1384" class="cable gnd" data-conexion="e52 ↔ f52 (polo GND)"/>
+  <path d="M1362.5 834.9 l13 18" class="linea"/><circle cx="1362.5" cy="834.9" r="2.6" class="borne"/><circle cx="1362.5" cy="861.1" r="2.6" class="borne"/>
   <circle cx="1341" cy="834.9" r="3" class="borne"/>
   <circle cx="1384" cy="834.9" r="3" class="borne"/>
   <circle cx="1341" cy="861.1" r="3" class="borne"/>
   <circle cx="1384" cy="861.1" r="3" class="borne"/>
-  <text x="1550" y="822.9" class="micro" text-anchor="start">Verde</text>
+  <text x="1550" y="822.9" class="micro" text-anchor="start">Verde · GND h52</text>
   <path d="M1301 900.4 H1341" class="tira dig"/>
-  <path d="M1384 900.4 H1424" class="tira gnd"/>
+  <path d="M1384 926.6 H1424" class="tira gnd"/>
   <path d="M1030 900.4 H1301" class="puente"/><path d="M1030 900.4 H1301" class="cable dig" data-conexion="TX2 · GPIO17 → c55"/>
   <circle cx="1301" cy="900.4" r="4" fill="#276ba6" stroke="none" stroke-width="2"/>
-  <path d="M1424 900.4 H1446 Q1451 900.4 1451 906.4 V932.6 Q1451 937.6 1446 937.6 H1242" class="puente"/><path d="M1424 900.4 H1446 Q1451 900.4 1451 906.4 V932.6 Q1451 937.6 1446 937.6 H1242" class="cable gnd" data-conexion="h55 → riel azul izquierdo"/>
-  <circle cx="1424" cy="900.4" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
+  <path d="M1424 926.6 H1446 Q1451 926.6 1451 932.6 Q1451 937.6 1446 937.6 H1242" class="puente"/><path d="M1424 926.6 H1446 Q1451 926.6 1451 932.6 Q1451 937.6 1446 937.6 H1242" class="cable gnd" data-conexion="h57 → riel azul izquierdo"/>
+  <circle cx="1424" cy="926.6" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
   <circle cx="1242" cy="937.6" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
   <rect x="1334" y="893.4" width="57" height="40.200000000000045" rx="5" class="fisico"/>
-  <path d="M1341 900.4 V926.6" class="cable dig" data-conexion="e55 ↔ e57"/>
-  <path d="M1384 900.4 V926.6" class="cable gnd" data-conexion="f55 ↔ f57"/>
-  <path d="M1341 900.4 h8 l26 15 M1379 900.4 h5" class="linea"/>
+  <path d="M1341 900.4 H1384" class="cable dig" data-conexion="e55 ↔ f55 (polo de señal)"/>
+  <path d="M1341 926.6 H1384" class="cable gnd" data-conexion="e57 ↔ f57 (polo GND)"/>
+  <path d="M1362.5 900.4 l13 18" class="linea"/><circle cx="1362.5" cy="900.4" r="2.6" class="borne"/><circle cx="1362.5" cy="926.6" r="2.6" class="borne"/>
   <circle cx="1341" cy="900.4" r="3" class="borne"/>
   <circle cx="1384" cy="900.4" r="3" class="borne"/>
   <circle cx="1341" cy="926.6" r="3" class="borne"/>
   <circle cx="1384" cy="926.6" r="3" class="borne"/>
-  <text x="1550" y="888.4" class="micro" text-anchor="start">Inicio</text>
+  <text x="1550" y="888.4" class="micro" text-anchor="start">Inicio · GND h57</text>
   <path d="M1030 951 H1242" class="cable gnd" data-conexion="GND ESP32 → riel azul izquierdo protoboard 1"/>
   <circle cx="1242" cy="951" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
   <path d="M1242 1009 V1070 H467 V1009" class="cable gnd" data-conexion="Puente de GND: riel azul izquierdo PB1 ↔ riel azul derecho PB2"/>
@@ -2172,5 +2172,5 @@
   <path d="M59 1142 h29" class="cable vin"/><text x="98" y="1147" class="leyenda" text-anchor="start">VIN por USB</text><path d="M257 1142 h29" class="cable gnd"/><text x="296" y="1147" class="leyenda" text-anchor="start">GND</text><path d="M414 1142 h29" class="cable v3"/><text x="453" y="1147" class="leyenda" text-anchor="start">3V3</text><path d="M550 1142 h29" class="cable pwm"/><text x="589" y="1147" class="leyenda" text-anchor="start">PWM</text><path d="M673 1142 h29" class="cable dig"/><text x="712" y="1147" class="leyenda" text-anchor="start">Señal digital</text><path d="M887 1142 h29" class="cable eco"/><text x="926" y="1147" class="leyenda" text-anchor="start">ECHO original</text><path d="M1135 1142 h29" class="cable red"/><text x="1174" y="1147" class="leyenda" text-anchor="start">ECHO reducido</text><path d="M1392 1142 h29" class="cable adc"/><text x="1431" y="1147" class="leyenda" text-anchor="start">Entrada analógica</text>
   <rect x="48" y="1170" width="526" height="140" rx="12" class="notaCaja"/><text x="65" y="1196" class="etiqueta" text-anchor="start">Protoboard 2 · sensores y servo</text><text x="65" y="1221" class="nota" text-anchor="start">HC-SR04: a30–a33. Divisor en las filas 32, 38 y 43.</text><text x="65" y="1242" class="nota" text-anchor="start">R1, R2 y R3: 2,2 kΩ cada una; R1 y R2 van en paralelo.</text><text x="65" y="1263" class="nota" text-anchor="start">LDR: g15–g17. Resistencia 10 kΩ: h17–h22.</text><text x="65" y="1284" class="nota" text-anchor="start">Fila 47: paso del PWM. El servo se alimenta de VIN.</text>
   <rect x="596" y="1170" width="526" height="140" rx="12" class="notaCaja"/><text x="613" y="1196" class="etiqueta" text-anchor="start">Referencia del trazado</text><text x="613" y="1221" class="nota" text-anchor="start">Vista superior, sin escala. Los terminales del ESP32</text><text x="613" y="1242" class="nota" text-anchor="start">están agrupados por función y los puntos de los rieles</text><text x="613" y="1263" class="nota" text-anchor="start">se muestran de forma esquemática. Los puntos sólidos</text><text x="613" y="1284" class="nota" text-anchor="start">marcan uniones; un cruce sin punto no une redes.</text>
-  <rect x="1144" y="1170" width="526" height="140" rx="12" class="notaCaja"/><text x="1161" y="1196" class="etiqueta" text-anchor="start">Protoboard 1 · LEDs y mandos</text><text x="1161" y="1221" class="nota" text-anchor="start">LEDs: filas 10/11, 20/21 y 30/31; 220 Ω por color.</text><text x="1161" y="1242" class="nota" text-anchor="start">Pulsadores: filas 40/42, 45/47, 50/52 y 55/57.</text><text x="1161" y="1263" class="nota" text-anchor="start">Serie de agujeros por fila: a–e y f–j son grupos separados.</text><text x="1161" y="1284" class="nota" text-anchor="start">Riel azul izquierdo: retorno común; pull-up interno.</text>
+  <rect x="1144" y="1170" width="526" height="140" rx="12" class="notaCaja"/><text x="1161" y="1196" class="etiqueta" text-anchor="start">Protoboard 1 · LEDs y mandos</text><text x="1161" y="1221" class="nota" text-anchor="start">LEDs: filas 10/11, 20/21 y 30/31; 220 Ω por color.</text><text x="1161" y="1242" class="nota" text-anchor="start">Pulsadores: filas 40/42, 45/47, 50/52 y 55/57.</text><text x="1161" y="1263" class="nota" text-anchor="start">Serie de agujeros por fila: a–e y f–j son grupos separados.</text><text x="1161" y="1284" class="nota" text-anchor="start">GND al riel azul izquierdo desde h42, h47, h52 y h57.</text>
 </svg>

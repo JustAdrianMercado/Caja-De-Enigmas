@@ -166,16 +166,15 @@ positivos `VIN` y `3V3` pertenecen a redes distintas.
 
 | Pulsador | Jumper de señal | Polo de señal | Polo de GND | Retorno al riel azul izquierdo |
 |---|---|---|---|---|
-| Rojo | D13/GPIO13 → c40 | e40–e42 | f40–f42 | h40 → riel |
-| Amarillo | D14/GPIO14 → c45 | e45–e47 | f45–f47 | h45 → riel |
-| Verde | RX2/GPIO16 → c50 | e50–e52 | f50–f52 | h50 → riel |
-| Inicio | TX2/GPIO17 → c55 | e55–e57 | f55–f57 | h55 → riel |
+| Rojo | D13/GPIO13 → c40 | e40–f40 | e42–f42 | h42 → riel |
+| Amarillo | D14/GPIO14 → c45 | e45–f45 | e47–f47 | h47 → riel |
+| Verde | RX2/GPIO16 → c50 | e50–f50 | e52–f52 | h52 → riel |
+| Inicio | TX2/GPIO17 → c55 | e55–f55 | e57–f57 | h57 → riel |
 
-Los pulsadores cruzan el canal central. Se dibujan con los dos polos separados
-en reposo y unidos al presionar. El `INPUT_PULLUP` interno mantiene `HIGH` en
-reposo y la entrada baja a `LOW` al cerrar el contacto. Esa es la orientación
-eléctrica prevista para las patas indicadas; no se presenta como una medición
-de continuidad.
+Los pulsadores cruzan el canal central. Las patas de cada fila forman un polo
+del pulsador. La señal llega a la fila superior y GND a la inferior. El
+`INPUT_PULLUP` interno mantiene `HIGH` en reposo y el contacto entre ambas
+filas lleva la entrada a `LOW` al presionar.
 
 ### Protoboard 2: HC-SR04, LDR y SG90
 
