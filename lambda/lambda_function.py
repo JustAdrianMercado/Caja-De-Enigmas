@@ -24,6 +24,7 @@ from manejadores.consultar_modo import ConsultarModoIntentHandler
 from manejadores.cambiar_dificultad import CambiarDificultadIntentHandler
 from manejadores.cambiar_parametro import CambiarParametroIntentHandler
 from manejadores.consultar_parametros import ConsultarParametrosIntentHandler
+from manejadores.consultar_sensores import ConsultarSensoresIntentHandler
 from servicios.publicador_eventos import PublicadorEventos
 from manejadores.consultar_cerradura import ConsultarCerraduraIntentHandler
 from manejadores.controlar_cerradura import (
@@ -42,7 +43,7 @@ from manejadores.sesion import (
 
 def crear_skill(repositorio, servicio_registro, servicio_shadow,
                 prefijo="caja-enigmas-", publicador_eventos=None,
-                obtener_pista=None):
+                obtener_pista=None, obtener_pista_progresiva=None):
     """Registra todos los manejadores con servicios reemplazables en tests."""
     skill_builder = SkillBuilder()
     skill_builder.add_request_handler(LaunchRequestHandler(repositorio))
@@ -58,11 +59,12 @@ def crear_skill(repositorio, servicio_registro, servicio_shadow,
         IniciarPartidaIntentHandler, ConsultarProgresoIntentHandler,
         CambiarModoIntentHandler, ConsultarModoIntentHandler,
         CambiarDificultadIntentHandler, CambiarParametroIntentHandler,
-        ConsultarParametrosIntentHandler,
+        ConsultarParametrosIntentHandler, ConsultarSensoresIntentHandler,
     ):
         skill_builder.add_request_handler(clase(repositorio, servicio_shadow))
     skill_builder.add_request_handler(PedirPistaIntentHandler(
-        repositorio, servicio_shadow, publicador_eventos, obtener_pista
+        repositorio, servicio_shadow, publicador_eventos, obtener_pista,
+        obtener_pista_progresiva,
     ))
     skill_builder.add_request_handler(
         ConsultarCerraduraIntentHandler(repositorio, servicio_shadow)
