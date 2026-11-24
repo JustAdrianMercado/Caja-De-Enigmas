@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="775" viewBox="0 0 1200 775" role="img" aria-labelledby="titulo descripcion">
+  <title id="titulo">Circuito de la LDR — Caja de los Enigmas</title>
+  <desc id="descripcion">LDR entre g15 y g17. 3V3 llega por i15 al nodo de g15; el punto medio g17 se une a i17 hacia D34/GPIO34 ADC1. Resistencia de 10 kΩ entre h17 y h22. j22 lleva h22 al riel azul derecho de GND común.</desc>
+  <defs><style>
+    text{font-family:"Segoe UI",Arial,sans-serif;fill:#172c43}
+    .sobre{font-size:14px;font-weight:700;letter-spacing:1.8px;fill:#276394}
+    .titulo{font-size:33px;font-weight:700}
+    .subtitulo{font-size:16px;fill:#50647a}
+    .nombre{font-size:22px;font-weight:700}
+    .etiqueta{font-size:17px;font-weight:700}
+    .texto{font-size:17px}
+    .nota{font-size:15px;fill:#50647a}
+    .pequena{font-size:13px;fill:#50647a}
+    .micro{font-size:11px;font-weight:700;fill:#425c74}
+    .leyenda{font-size:14px;fill:#334e66}
+    .marco{fill:#fff;stroke:#d1dce6;stroke-width:1.5}
+    .dispositivo{fill:#f6faff;stroke:#3975a7;stroke-width:2}
+    .notaCaja{fill:#f6f9fc;stroke:#d1dce6;stroke-width:1.4}
+    .placa{fill:#f7f9fc;stroke:#afc2d3;stroke-width:1.7}
+    .canal{fill:#e8eff5}
+    .fisico{fill:#e6eff9;stroke:#385572;stroke-width:1.6}
+    .linea,.flecha,.cable,.puente,.tira{fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .linea{stroke:#172c43;stroke-width:2.6}
+    .flecha{stroke:#172c43;stroke-width:1.5}
+    .cable{stroke-width:3.5}
+    .puente{stroke:#fff;stroke-width:7}
+    .tira{stroke-width:1.8;stroke-dasharray:3 3}
+    .borne{fill:#fff;stroke:#172c43;stroke-width:2}
+    .orificio{fill:#fff;stroke:#b3c3d2;stroke-width:1}
+    .vin{stroke:#c32e3d}.gnd{stroke:#243c59}.v3{stroke:#7850a5}
+    .pwm{stroke:#b85c12}.dig{stroke:#276ba6}.eco{stroke:#9f3272}
+    .red{stroke:#087b70}.adc{stroke:#227145}.usb{stroke:#3769ad;stroke-dasharray:6 5}
+  </style></defs>
+  <rect width="1200" height="775" fill="#fff"/>
+  <text x="48" y="34" class="sobre" text-anchor="start">SIS-234  /  PRÁCTICA 4  /  ILUMINACIÓN</text>
+  <text x="48" y="75" class="titulo" text-anchor="start">Circuito de la LDR</text>
+  <text x="48" y="104" class="subtitulo" text-anchor="start">Entrada analógica ADC1 · Protoboard 2 · Alimentación directa desde 3V3</text>
+  <path d="M48 121 H1152" class="tira" stroke="#aebfce"/>
+  <rect x="54" y="157" width="236" height="422" rx="12" class="dispositivo"/><text x="74" y="191" class="nombre" text-anchor="start">ESP32</text><text x="74" y="214" class="nota" text-anchor="start">DOIT DevKit V1</text>
+  <rect x="318" y="157" width="827" height="422" rx="12" class="marco"/>
+  <text x="340" y="187" class="sobre" text-anchor="start">PROTOBOARD 2 · divisor en 3V3</text>
+  <circle cx="290" cy="232" r="5" class="borne"/>
+  <text x="272" y="237" class="etiqueta" text-anchor="end">3V3</text>
+  <path d="M296 232 H700 V277" class="cable v3" data-conexion="3V3 → i15 ↔ g15"/>
+  <text x="526" y="216" class="nota" text-anchor="middle">i15 ↔ g15</text>
+  <path d="M700 277 L700 291.91 L707 294.5 L693 299.6 L707 304.8 L693 309.9 L707 315.1 L693 320.2 L707 325.4 L693 330.5 L700 333.09000000000003 L700 348" class="linea"/>
+  <circle cx="700" cy="313" r="30" fill="none" stroke="#9db2c5" stroke-width="2"/>
+  <path d="M646 283 l22 13 m-7 -1 l7 1 l-4 -6 M639 303 l24 13 m-7 -1 l7 1 l-4 -6" class="flecha"/>
+  <text x="746" y="310" class="etiqueta" text-anchor="start">LDR</text>
+  <text x="746" y="333" class="nota" text-anchor="start">g15–g17</text>
+  <path d="M700 348 V391 H296" class="cable adc" data-conexion="g17 ↔ i17 → D34 ADC1"/>
+  <circle cx="700" cy="391" r="4" fill="#227145" stroke="none" stroke-width="2"/>
+  <circle cx="290" cy="391" r="5" class="borne"/>
+  <text x="273" y="396" class="etiqueta" text-anchor="end">D34 / GPIO34</text>
+  <text x="273" y="419" class="nota" text-anchor="end">ADC1 · entrada analógica</text>
+  <text x="493" y="377" class="nota" text-anchor="middle">i17 ↔ g17 ↔ h17</text>
+  <path d="M700 391 V429" class="cable adc" data-conexion="nodo 17 ↔ h17"/>
+  <path d="M700 429 L700 445.59 L707 448.5 L693 454.2 L707 459.9 L693 465.6 L707 471.4 L693 477.1 L707 482.8 L693 488.5 L700 491.40999999999997 L700 508" class="linea"/>
+  <text x="740" y="464" class="etiqueta" text-anchor="start">10 kΩ</text>
+  <text x="740" y="486" class="nota" text-anchor="start">h17–h22</text>
+  <path d="M700 508 V543 H296" class="cable gnd" data-conexion="h22 ↔ j22 → riel azul derecho → GND común"/>
+  <circle cx="290" cy="543" r="5" class="borne"/>
+  <text x="273" y="548" class="etiqueta" text-anchor="end">GND común</text>
+  <text x="531" y="567" class="nota" text-anchor="middle">h22 ↔ j22 → riel azul derecho</text>
+  <rect x="54" y="607" width="1091" height="99" rx="12" class="notaCaja"/><text x="71" y="633" class="etiqueta" text-anchor="start">Respuesta del divisor</text><text x="71" y="658" class="nota" text-anchor="start">Más iluminación reduce la resistencia de la LDR y aumenta la tensión en GPIO34.</text><text x="71" y="679" class="nota" text-anchor="start">La rama usa 3V3 del ESP32. El porcentaje de luz se obtiene por calibración del ADC, no por medir lux.</text>
+  <path d="M55 740 h29" class="cable v3"/><text x="94" y="745" class="leyenda" text-anchor="start">Alimentación 3,3 V</text><path d="M323 740 h29" class="cable adc"/><text x="362" y="745" class="leyenda" text-anchor="start">Señal analógica</text><path d="M578 740 h29" class="cable gnd"/><text x="617" y="745" class="leyenda" text-anchor="start">GND común</text>
+</svg>

@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="794" viewBox="0 0 1200 794" role="img" aria-labelledby="titulo descripcion">
+  <title id="titulo">Circuito del sensor ultrasónico — Caja de los Enigmas</title>
+  <desc id="descripcion">Conexión real. HC-SR04 VCC a30 b30 hacia VIN del ESP32, TRIG a31 b31 hacia GPIO23, GND a33 e33 hacia riel azul derecho. ECHO a32 conecta dos resistencias en paralelo b32–b38 y c32–c38, 2,2 kΩ cada una. La tercera resistencia de 2,2 kΩ va de d38 a d43. e38 va a GPIO19 y e43 a GND. Salida nominal calculada 3,33 V con entrada nominal 5 V. GND común al ESP32.</desc>
+  <defs><style>
+    text{font-family:"Segoe UI",Arial,sans-serif;fill:#172c43}
+    .sobre{font-size:14px;font-weight:700;letter-spacing:1.8px;fill:#276394}
+    .titulo{font-size:33px;font-weight:700}
+    .subtitulo{font-size:16px;fill:#50647a}
+    .nombre{font-size:22px;font-weight:700}
+    .etiqueta{font-size:17px;font-weight:700}
+    .texto{font-size:17px}
+    .nota{font-size:15px;fill:#50647a}
+    .pequena{font-size:13px;fill:#50647a}
+    .micro{font-size:11px;font-weight:700;fill:#425c74}
+    .leyenda{font-size:14px;fill:#334e66}
+    .marco{fill:#fff;stroke:#d1dce6;stroke-width:1.5}
+    .dispositivo{fill:#f6faff;stroke:#3975a7;stroke-width:2}
+    .notaCaja{fill:#f6f9fc;stroke:#d1dce6;stroke-width:1.4}
+    .placa{fill:#f7f9fc;stroke:#afc2d3;stroke-width:1.7}
+    .canal{fill:#e8eff5}
+    .fisico{fill:#e6eff9;stroke:#385572;stroke-width:1.6}
+    .linea,.flecha,.cable,.puente,.tira{fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .linea{stroke:#172c43;stroke-width:2.6}
+    .flecha{stroke:#172c43;stroke-width:1.5}
+    .cable{stroke-width:3.5}
+    .puente{stroke:#fff;stroke-width:7}
+    .tira{stroke-width:1.8;stroke-dasharray:3 3}
+    .borne{fill:#fff;stroke:#172c43;stroke-width:2}
+    .orificio{fill:#fff;stroke:#b3c3d2;stroke-width:1}
+    .vin{stroke:#c32e3d}.gnd{stroke:#243c59}.v3{stroke:#7850a5}
+    .pwm{stroke:#b85c12}.dig{stroke:#276ba6}.eco{stroke:#9f3272}
+    .red{stroke:#087b70}.adc{stroke:#227145}.usb{stroke:#3769ad;stroke-dasharray:6 5}
+  </style></defs>
+  <rect width="1200" height="794" fill="#fff"/>
+  <text x="48" y="34" class="sobre" text-anchor="start">SIS-234  /  PRÁCTICA 4  /  DISTANCIA</text>
+  <text x="48" y="75" class="titulo" text-anchor="start">Circuito del sensor ultrasónico</text>
+  <text x="48" y="104" class="subtitulo" text-anchor="start">HC-SR04 · Protoboard 2 · Divisor de ECHO con tres resistencias de 2,2 kΩ</text>
+  <path d="M48 121 H1152" class="tira" stroke="#aebfce"/>
+  <rect x="53" y="158" width="262" height="417" rx="12" class="dispositivo"/><text x="73" y="192" class="nombre" text-anchor="start">HC-SR04</text><text x="73" y="215" class="nota" text-anchor="start">En el borde de la protoboard 2</text>
+  <rect x="920" y="158" width="226" height="417" rx="12" class="dispositivo"/><text x="940" y="192" class="nombre" text-anchor="start">ESP32</text><text x="940" y="215" class="nota" text-anchor="start">DOIT DevKit V1</text>
+  <circle cx="103" cy="255" r="26" fill="#e8eff5" stroke="#4e677b" stroke-width="2"/>
+  <circle cx="103" cy="255" r="16" fill="#d2dce5" stroke="none" stroke-width="2"/>
+  <circle cx="103" cy="328" r="26" fill="#e8eff5" stroke="#4e677b" stroke-width="2"/>
+  <circle cx="103" cy="328" r="16" fill="#d2dce5" stroke="none" stroke-width="2"/>
+  <text x="149" y="469" class="nota" text-anchor="middle">Transductores</text>
+  <text x="149" y="492" class="nota" text-anchor="middle">hacia el exterior</text>
+  <circle cx="315" cy="233" r="5" class="borne"/>
+  <circle cx="920" cy="233" r="5" class="borne"/>
+  <text x="297" y="238" class="etiqueta" text-anchor="end">VCC · a30</text>
+  <text x="939" y="238" class="etiqueta" text-anchor="start">VIN</text>
+  <path d="M321 233 H914" class="cable vin" data-conexion="b30 → riel rojo derecho → VIN"/>
+  <text x="610" y="219" class="nota" text-anchor="middle">b30 → riel rojo derecho → VIN</text>
+  <circle cx="315" cy="298" r="5" class="borne"/>
+  <circle cx="920" cy="298" r="5" class="borne"/>
+  <text x="297" y="303" class="etiqueta" text-anchor="end">TRIG · a31</text>
+  <text x="939" y="303" class="etiqueta" text-anchor="start">D23 / GPIO23</text>
+  <path d="M321 298 H914" class="cable dig" data-conexion="b31 ↔ a31 → D23"/>
+  <text x="610" y="284" class="nota" text-anchor="middle">b31 ↔ a31 → D23</text>
+  <circle cx="315" cy="540" r="5" class="borne"/>
+  <circle cx="920" cy="540" r="5" class="borne"/>
+  <text x="297" y="545" class="etiqueta" text-anchor="end">GND · a33</text>
+  <text x="939" y="545" class="etiqueta" text-anchor="start">GND común</text>
+  <path d="M321 540 H914" class="cable gnd" data-conexion="e33 → riel azul derecho"/>
+  <text x="610" y="526" class="nota" text-anchor="middle">e33 → riel azul derecho</text>
+  <circle cx="315" cy="408" r="5" class="borne"/>
+  <text x="297" y="413" class="etiqueta" text-anchor="end">ECHO · a32</text>
+  <path d="M321 408 H414 M414 375 V442 M414 375 H480 M414 442 H480" class="cable eco" data-conexion="ECHO nominal 5 V: a32 ↔ b32 ↔ c32"/>
+  <circle cx="414" cy="408" r="4" fill="#9f3272" stroke="none" stroke-width="2"/>
+  <text x="373" y="389" class="pequena" text-anchor="middle">ECHO</text>
+  <text x="373" y="432" class="pequena" text-anchor="middle">5 V nom.</text>
+  <path d="M480 375 L502 375 L511.6 382 L530.7 368 L549.8 382 L568.9 368 L588.1 382 L607.2 368 L626.3 382 L645.4 368 L655 375 L677 375" class="linea"/>
+  <path d="M480 442 L502 442 L511.6 449 L530.7 435 L549.8 449 L568.9 435 L588.1 449 L607.2 435 L626.3 449 L645.4 435 L655 442 L677 442" class="linea"/>
+  <text x="578" y="358" class="nota" text-anchor="middle">R1 · 2,2 kΩ · b32–b38</text>
+  <text x="578" y="470" class="nota" text-anchor="middle">R2 · 2,2 kΩ · c32–c38</text>
+  <path d="M677 375 H748 V442 H677 M748 408 H914" class="cable red" data-conexion="Nodo 38 ↔ e38 → D19"/>
+  <circle cx="748" cy="408" r="4" fill="#087b70" stroke="none" stroke-width="2"/>
+  <text x="835" y="389" class="nota" text-anchor="middle">ECHO reducido</text>
+  <text x="835" y="434" class="pequena" text-anchor="middle">≈ 3,33 V teóricos</text>
+  <circle cx="920" cy="408" r="5" class="borne"/>
+  <text x="939" y="413" class="etiqueta" text-anchor="start">D19 / GPIO19</text>
+  <path d="M748 442 V460" class="cable red" data-conexion="d38 ↔ nodo 38"/>
+  <path d="M748 460 L748 473.44 L755 475.8 L741 480.4 L755 485 L741 489.7 L755 494.3 L741 499 L755 503.6 L741 508.2 L748 510.56 L748 524" class="linea"/>
+  <path d="M748 524 V540" class="cable gnd" data-conexion="d43 ↔ e43 → riel azul derecho"/>
+  <circle cx="748" cy="540" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
+  <text x="769" y="486" class="etiqueta" text-anchor="start">R3 · 2,2 kΩ</text>
+  <text x="769" y="505" class="pequena" text-anchor="start">d38–d43</text><text x="769" y="524" class="pequena" text-anchor="start">e43 → riel azul derecho</text>
+  <rect x="53" y="605" width="1093" height="119" rx="12" class="notaCaja"/><text x="70" y="631" class="etiqueta" text-anchor="start">Divisor ECHO instalado</text><text x="70" y="656" class="nota" text-anchor="start">R1 ∥ R2 = 1,1 kΩ entre ECHO y el nodo de la fila 38. R3 = 2,2 kΩ entre ese nodo y GND.</text><text x="70" y="677" class="nota" text-anchor="start">5 V × 2,2 / (1,1 + 2,2) ≈ 3,33 V. Valor calculado, no medido.</text><text x="70" y="698" class="nota" text-anchor="start">La relación deja poco margen frente a variaciones de alimentación y tolerancias.</text>
+  <path d="M54 759 h29" class="cable vin"/><text x="93" y="764" class="leyenda" text-anchor="start">VIN por USB</text><path d="M248 759 h29" class="cable dig"/><text x="287" y="764" class="leyenda" text-anchor="start">TRIG</text><path d="M390 759 h29" class="cable eco"/><text x="429" y="764" class="leyenda" text-anchor="start">ECHO original</text><path d="M586 759 h29" class="cable red"/><text x="625" y="764" class="leyenda" text-anchor="start">ECHO reducido</text><path d="M826 759 h29" class="cable gnd"/><text x="865" y="764" class="leyenda" text-anchor="start">GND común</text>
+</svg>

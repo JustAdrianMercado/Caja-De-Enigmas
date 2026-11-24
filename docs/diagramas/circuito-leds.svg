@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="792" viewBox="0 0 1200 792" role="img" aria-labelledby="titulo descripcion">
+  <title id="titulo">Circuito de los LEDs — Caja de los Enigmas</title>
+  <desc id="descripcion">Tres ramas D25, D26 y D27. Cada GPIO llega a c15, c25 o c35, pasa por su resistencia de 220 Ω hasta el ánodo en a10, a20 o a30. Los cátodos a11, a21 y a31 llegan al riel azul izquierdo mediante c11, c21 y c31.</desc>
+  <defs><style>
+    text{font-family:"Segoe UI",Arial,sans-serif;fill:#172c43}
+    .sobre{font-size:14px;font-weight:700;letter-spacing:1.8px;fill:#276394}
+    .titulo{font-size:33px;font-weight:700}
+    .subtitulo{font-size:16px;fill:#50647a}
+    .nombre{font-size:22px;font-weight:700}
+    .etiqueta{font-size:17px;font-weight:700}
+    .texto{font-size:17px}
+    .nota{font-size:15px;fill:#50647a}
+    .pequena{font-size:13px;fill:#50647a}
+    .micro{font-size:11px;font-weight:700;fill:#425c74}
+    .leyenda{font-size:14px;fill:#334e66}
+    .marco{fill:#fff;stroke:#d1dce6;stroke-width:1.5}
+    .dispositivo{fill:#f6faff;stroke:#3975a7;stroke-width:2}
+    .notaCaja{fill:#f6f9fc;stroke:#d1dce6;stroke-width:1.4}
+    .placa{fill:#f7f9fc;stroke:#afc2d3;stroke-width:1.7}
+    .canal{fill:#e8eff5}
+    .fisico{fill:#e6eff9;stroke:#385572;stroke-width:1.6}
+    .linea,.flecha,.cable,.puente,.tira{fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .linea{stroke:#172c43;stroke-width:2.6}
+    .flecha{stroke:#172c43;stroke-width:1.5}
+    .cable{stroke-width:3.5}
+    .puente{stroke:#fff;stroke-width:7}
+    .tira{stroke-width:1.8;stroke-dasharray:3 3}
+    .borne{fill:#fff;stroke:#172c43;stroke-width:2}
+    .orificio{fill:#fff;stroke:#b3c3d2;stroke-width:1}
+    .vin{stroke:#c32e3d}.gnd{stroke:#243c59}.v3{stroke:#7850a5}
+    .pwm{stroke:#b85c12}.dig{stroke:#276ba6}.eco{stroke:#9f3272}
+    .red{stroke:#087b70}.adc{stroke:#227145}.usb{stroke:#3769ad;stroke-dasharray:6 5}
+  </style></defs>
+  <rect width="1200" height="792" fill="#fff"/>
+  <text x="48" y="34" class="sobre" text-anchor="start">SIS-234  /  PRÁCTICA 4  /  LUZ Y MEMORIA</text>
+  <text x="48" y="75" class="titulo" text-anchor="start">Circuito de los LEDs</text>
+  <text x="48" y="104" class="subtitulo" text-anchor="start">Esquema eléctrico y contactos físicos · Protoboard 1</text>
+  <path d="M48 121 H1152" class="tira" stroke="#aebfce"/>
+  <rect x="54" y="155" width="221" height="475" rx="12" class="dispositivo"/><text x="74" y="189" class="nombre" text-anchor="start">ESP32</text><text x="74" y="212" class="nota" text-anchor="start">DOIT DevKit V1</text>
+  <rect x="307" y="155" width="838" height="475" rx="12" class="marco"/>
+  <text x="330" y="188" class="sobre" text-anchor="start">PROTOBOARD 1 · tres ramas en serie</text>
+  <text x="253" y="264" class="etiqueta" text-anchor="end">D25 / GPIO25</text>
+  <circle cx="275" cy="258" r="5" class="borne"/>
+  <text x="327" y="235" class="etiqueta" text-anchor="start">Rojo</text>
+  <path d="M281 258 H485" class="cable dig" data-conexion="D25 / GPIO25 → c15"/>
+  <circle cx="385" cy="258" r="4" fill="#276ba6" stroke="none" stroke-width="2"/>
+  <text x="385" y="285" class="nota" text-anchor="middle">c15 ↔ b15</text>
+  <path d="M485 258 L507 258 L515 265 L531 251 L547 265 L563 251 L579 265 L595 251 L611 265 L627 251 L635 258 L657 258" class="linea"/>
+  <text x="570" y="238" class="etiqueta" text-anchor="middle">220 Ω</text>
+  <text x="570" y="286" class="nota" text-anchor="middle">b15 → b10</text>
+  <path d="M657 258 H769" class="cable dig" data-conexion="b10 ↔ a10"/>
+  <text x="708" y="285" class="nota" text-anchor="middle">a10 · ánodo</text>
+  <path d="M769 258 H777 M777 247 L799 258 L777 269 Z M800 245 V271 M800 258 H811" class="linea" style="fill:#e36b71"/><path d="M782 241 l12 -12 m-7 0 h7 v7 M795 243 l12 -12 m-7 0 h7 v7" class="flecha"/>
+  <path d="M811 258 H1104" class="cable gnd" data-conexion="a11 ↔ c11 → riel azul izquierdo"/>
+  <text x="860" y="285" class="nota" text-anchor="middle">a11 · cátodo</text>
+  <circle cx="988" cy="258" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
+  <text x="988" y="285" class="nota" text-anchor="middle">c11</text>
+  <circle cx="1104" cy="258" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
+  <text x="253" y="378" class="etiqueta" text-anchor="end">D26 / GPIO26</text>
+  <circle cx="275" cy="372" r="5" class="borne"/>
+  <text x="327" y="349" class="etiqueta" text-anchor="start">Amarillo</text>
+  <path d="M281 372 H485" class="cable dig" data-conexion="D26 / GPIO26 → c25"/>
+  <circle cx="385" cy="372" r="4" fill="#276ba6" stroke="none" stroke-width="2"/>
+  <text x="385" y="399" class="nota" text-anchor="middle">c25 ↔ b25</text>
+  <path d="M485 372 L507 372 L515 379 L531 365 L547 379 L563 365 L579 379 L595 365 L611 379 L627 365 L635 372 L657 372" class="linea"/>
+  <text x="570" y="352" class="etiqueta" text-anchor="middle">220 Ω</text>
+  <text x="570" y="400" class="nota" text-anchor="middle">b25 → b20</text>
+  <path d="M657 372 H769" class="cable dig" data-conexion="b20 ↔ a20"/>
+  <text x="708" y="399" class="nota" text-anchor="middle">a20 · ánodo</text>
+  <path d="M769 372 H777 M777 361 L799 372 L777 383 Z M800 359 V385 M800 372 H811" class="linea" style="fill:#efbd50"/><path d="M782 355 l12 -12 m-7 0 h7 v7 M795 357 l12 -12 m-7 0 h7 v7" class="flecha"/>
+  <path d="M811 372 H1104" class="cable gnd" data-conexion="a21 ↔ c21 → riel azul izquierdo"/>
+  <text x="860" y="399" class="nota" text-anchor="middle">a21 · cátodo</text>
+  <circle cx="988" cy="372" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
+  <text x="988" y="399" class="nota" text-anchor="middle">c21</text>
+  <circle cx="1104" cy="372" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
+  <text x="253" y="492" class="etiqueta" text-anchor="end">D27 / GPIO27</text>
+  <circle cx="275" cy="486" r="5" class="borne"/>
+  <text x="327" y="463" class="etiqueta" text-anchor="start">Verde</text>
+  <path d="M281 486 H485" class="cable dig" data-conexion="D27 / GPIO27 → c35"/>
+  <circle cx="385" cy="486" r="4" fill="#276ba6" stroke="none" stroke-width="2"/>
+  <text x="385" y="513" class="nota" text-anchor="middle">c35 ↔ b35</text>
+  <path d="M485 486 L507 486 L515 493 L531 479 L547 493 L563 479 L579 493 L595 479 L611 493 L627 479 L635 486 L657 486" class="linea"/>
+  <text x="570" y="466" class="etiqueta" text-anchor="middle">220 Ω</text>
+  <text x="570" y="514" class="nota" text-anchor="middle">b35 → b30</text>
+  <path d="M657 486 H769" class="cable dig" data-conexion="b30 ↔ a30"/>
+  <text x="708" y="513" class="nota" text-anchor="middle">a30 · ánodo</text>
+  <path d="M769 486 H777 M777 475 L799 486 L777 497 Z M800 473 V499 M800 486 H811" class="linea" style="fill:#68bc89"/><path d="M782 469 l12 -12 m-7 0 h7 v7 M795 471 l12 -12 m-7 0 h7 v7" class="flecha"/>
+  <path d="M811 486 H1104" class="cable gnd" data-conexion="a31 ↔ c31 → riel azul izquierdo"/>
+  <text x="860" y="513" class="nota" text-anchor="middle">a31 · cátodo</text>
+  <circle cx="988" cy="486" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
+  <text x="988" y="513" class="nota" text-anchor="middle">c31</text>
+  <circle cx="1104" cy="486" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
+  <path d="M1104 258 V579 H281" class="cable gnd" data-conexion="Riel azul izquierdo → GND ESP32"/>
+  <circle cx="275" cy="579" r="5" class="borne"/>
+  <text x="253" y="585" class="etiqueta" text-anchor="end">GND</text>
+  <text x="1090" y="608" class="nota" text-anchor="end">Riel azul izquierdo</text>
+  <rect x="54" y="651" width="1091" height="77" rx="12" class="notaCaja"/><text x="71" y="677" class="etiqueta" text-anchor="start">Polaridad y retorno común</text><text x="71" y="702" class="nota" text-anchor="start">Cada GPIO conduce al ánodo a través de su propia resistencia; los cátodos vuelven a GND por el riel azul.</text>
+  <path d="M55 758 h29" class="cable dig"/><text x="94" y="763" class="leyenda" text-anchor="start">Señal digital</text><path d="M250 758 h29" class="cable gnd"/><text x="289" y="763" class="leyenda" text-anchor="start">GND común</text>
+</svg>

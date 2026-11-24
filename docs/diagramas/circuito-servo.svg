@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="837" viewBox="0 0 1200 837" role="img" aria-labelledby="titulo descripcion">
+  <title id="titulo">Circuito del servomotor SG90 — Caja de los Enigmas</title>
+  <desc id="descripcion">Servo SG90: naranja a f47 unido a h47 y GPIO18, rojo al riel rojo derecho desde VIN del ESP32 alimentado por micro-USB, marrón al riel azul derecho de GND común. 45 grados cerrada y 135 grados abierta son órdenes PWM, no mediciones del ángulo.</desc>
+  <defs><style>
+    text{font-family:"Segoe UI",Arial,sans-serif;fill:#172c43}
+    .sobre{font-size:14px;font-weight:700;letter-spacing:1.8px;fill:#276394}
+    .titulo{font-size:33px;font-weight:700}
+    .subtitulo{font-size:16px;fill:#50647a}
+    .nombre{font-size:22px;font-weight:700}
+    .etiqueta{font-size:17px;font-weight:700}
+    .texto{font-size:17px}
+    .nota{font-size:15px;fill:#50647a}
+    .pequena{font-size:13px;fill:#50647a}
+    .micro{font-size:11px;font-weight:700;fill:#425c74}
+    .leyenda{font-size:14px;fill:#334e66}
+    .marco{fill:#fff;stroke:#d1dce6;stroke-width:1.5}
+    .dispositivo{fill:#f6faff;stroke:#3975a7;stroke-width:2}
+    .notaCaja{fill:#f6f9fc;stroke:#d1dce6;stroke-width:1.4}
+    .placa{fill:#f7f9fc;stroke:#afc2d3;stroke-width:1.7}
+    .canal{fill:#e8eff5}
+    .fisico{fill:#e6eff9;stroke:#385572;stroke-width:1.6}
+    .linea,.flecha,.cable,.puente,.tira{fill:none;stroke-linecap:round;stroke-linejoin:round}
+    .linea{stroke:#172c43;stroke-width:2.6}
+    .flecha{stroke:#172c43;stroke-width:1.5}
+    .cable{stroke-width:3.5}
+    .puente{stroke:#fff;stroke-width:7}
+    .tira{stroke-width:1.8;stroke-dasharray:3 3}
+    .borne{fill:#fff;stroke:#172c43;stroke-width:2}
+    .orificio{fill:#fff;stroke:#b3c3d2;stroke-width:1}
+    .vin{stroke:#c32e3d}.gnd{stroke:#243c59}.v3{stroke:#7850a5}
+    .pwm{stroke:#b85c12}.dig{stroke:#276ba6}.eco{stroke:#9f3272}
+    .red{stroke:#087b70}.adc{stroke:#227145}.usb{stroke:#3769ad;stroke-dasharray:6 5}
+  </style></defs>
+  <rect width="1200" height="837" fill="#fff"/>
+  <text x="48" y="34" class="sobre" text-anchor="start">SIS-234  /  PRÁCTICA 4  /  CERRADURA</text>
+  <text x="48" y="75" class="titulo" text-anchor="start">Circuito del servomotor SG90</text>
+  <text x="48" y="104" class="subtitulo" text-anchor="start">Señal GPIO18 · Alimentación desde el VIN compartido de la protoboard 2</text>
+  <path d="M48 121 H1152" class="tira" stroke="#aebfce"/>
+  <rect x="55" y="155" width="235" height="390" rx="12" class="dispositivo"/><text x="75" y="189" class="nombre" text-anchor="start">ESP32</text><text x="75" y="212" class="nota" text-anchor="start">DOIT DevKit V1</text>
+  <rect x="897" y="155" width="247" height="390" rx="12" class="dispositivo"/><text x="917" y="189" class="nombre" text-anchor="start">Servomotor SG90</text><text x="917" y="212" class="nota" text-anchor="start">Fuera de las protoboards</text>
+  <rect x="327" y="155" width="533" height="390" rx="12" class="marco"/>
+  <text x="349" y="185" class="sobre" text-anchor="start">PROTOBOARD 2 · paso de PWM y alimentación</text>
+  <circle cx="290" cy="278" r="5" class="borne"/>
+  <circle cx="897" cy="278" r="5" class="borne"/>
+  <text x="273" y="284" class="etiqueta" text-anchor="end">D18 / GPIO18</text>
+  <text x="916" y="284" class="etiqueta" text-anchor="start">Naranja · PWM</text>
+  <path d="M296 278 H891" class="cable pwm" data-conexion="GPIO18 → h47 ↔ f47 → naranja"/>
+  <circle cx="578" cy="278" r="4" fill="#b85c12" stroke="none" stroke-width="2"/>
+  <text x="578" y="262" class="etiqueta" text-anchor="middle">h47 ↔ f47</text>
+  <circle cx="290" cy="369" r="5" class="borne"/>
+  <circle cx="897" cy="369" r="5" class="borne"/>
+  <text x="273" y="375" class="etiqueta" text-anchor="end">VIN</text>
+  <text x="916" y="375" class="etiqueta" text-anchor="start">Rojo · alimentación</text>
+  <path d="M296 369 H891" class="cable vin" data-conexion="VIN → riel rojo derecho → rojo"/>
+  <circle cx="578" cy="369" r="4" fill="#c32e3d" stroke="none" stroke-width="2"/>
+  <text x="578" y="353" class="etiqueta" text-anchor="middle">Riel rojo derecho</text>
+  <circle cx="290" cy="461" r="5" class="borne"/>
+  <circle cx="897" cy="461" r="5" class="borne"/>
+  <text x="273" y="467" class="etiqueta" text-anchor="end">GND común</text>
+  <text x="916" y="467" class="etiqueta" text-anchor="start">Marrón · GND</text>
+  <path d="M296 461 H891" class="cable gnd" data-conexion="GND común → riel azul derecho → marrón"/>
+  <circle cx="578" cy="461" r="4" fill="#243c59" stroke="none" stroke-width="2"/>
+  <text x="578" y="445" class="etiqueta" text-anchor="middle">Riel azul derecho</text>
+  <text x="76" y="510" class="nota" text-anchor="start">Alimentado por micro-USB</text>
+  <text x="350" y="509" class="nota" text-anchor="start">El riel VIN es compartido con el HC-SR04 en el montaje general.</text>
+  <rect x="1007" y="232" width="78" height="32" rx="4" class="fisico"/>
+  <circle cx="1026" cy="232" r="9" fill="#fbfdff" stroke="#385572" stroke-width="2"/>
+  <path d="M1026 232 l36 -10" class="linea"/>
+  <rect x="55" y="566" width="1089" height="92" rx="12" class="notaCaja"/><text x="72" y="592" class="etiqueta" text-anchor="start">Posiciones ordenadas por PWM</text><text x="72" y="617" class="nota" text-anchor="start">45° para cerrar (incluido el arranque) y 135° para abrir, según el firmware.</text><text x="72" y="638" class="nota" text-anchor="start">El SG90 no tiene un sensor independiente en este montaje que confirme el ángulo alcanzado.</text>
+  <rect x="55" y="674" width="1089" height="94" rx="12" class="notaCaja"/><text x="72" y="700" class="etiqueta" text-anchor="start">Límite de la alimentación actual</text><text x="72" y="725" class="nota" text-anchor="start">Los picos de corriente del servo pueden causar caídas de tensión o reinicios en el VIN compartido.</text><text x="72" y="746" class="nota" text-anchor="start">Una fuente externa regulada de 5 V con GND común es una mejora recomendada; el circuito instalado usa USB.</text>
+  <path d="M55 802 h29" class="cable pwm"/><text x="94" y="807" class="leyenda" text-anchor="start">PWM</text><path d="M225 802 h29" class="cable vin"/><text x="264" y="807" class="leyenda" text-anchor="start">VIN por USB</text><path d="M453 802 h29" class="cable gnd"/><text x="492" y="807" class="leyenda" text-anchor="start">GND común</text>
+</svg>

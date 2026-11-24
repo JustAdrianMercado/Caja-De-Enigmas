@@ -513,6 +513,12 @@ Así, una orden vieja de "abrir" que hubiera quedado en `desired` no puede abrir
 
 **Por qué la regla de la Nube no escribe en `desired`:** la consigna pide que la lógica de la Nube actúe sobre el objeto solo a través de `desired`. Esta regla no actúa sobre el objeto, porque el objeto está apagado o sin red. Su acción es dejar una alerta en el histórico para el operador, que la ve en el panel de reportes (patrón de acceso 6). Es el ejemplo que da la consigna: *"Si el Thing no reporta durante 15 min… se implementaría con otra Lambda ejecutada de forma programada"*.
 
+### 2.10 Circuito eléctrico del montaje P4 *(Santiago)*
+
+El [diagrama general del circuito](docs/diagramas/circuito-general-p4.svg) muestra la disposición real: protoboard 2 de sensores, ESP32 y protoboard 1 de LEDs y pulsadores. El SG90 está fuera de las protoboards. El circuito recibe alimentación por micro-USB, con VIN compartido por el HC-SR04 y el SG90, y 3V3 independiente para la LDR.
+
+Los esquemas por componente detallan el cableado: [LEDs](docs/diagramas/circuito-leds.svg), [pulsadores](docs/diagramas/circuito-pulsadores.svg), [HC-SR04 y divisor de ECHO](docs/diagramas/circuito-ultrasonico.svg), [LDR](docs/diagramas/circuito-ldr.svg) y [servomotor SG90](docs/diagramas/circuito-servo.svg). La [guía de montaje](docs/GUIA_MONTAJE.md#montaje-de-la-práctica-4) registra las coordenadas y las diferencias de alimentación y resistencias respecto del diseño de referencia.
+
 ## 3. Desarrollo e implementación
 
 El [firmware 0.4.0](firmware/src/main.cpp) integra los tres desafíos, el servo, el inicio por voz y el pulsador. La publicación de eventos sale de una cola de hasta 20 entradas, una por vuelta de `loop()`. Si la cola se llena, se descarta el más antiguo. Si se rechaza el mismo evento tres veces con la caja conectada, se descarta y se contabiliza.
