@@ -101,6 +101,30 @@ El `README.md` dice, para cada elemento, de qué consulta de DynamoDB sale: tabl
 
 Llenar al cerrar cada iteración, con lo que **de verdad** quedó hecho. Si un campo no aplica, "—". Qué va en cada campo y a qué sección del informe alimenta: [p4-00-resumen.md](p4-00-resumen.md#registro-de-lo-aplicado-en-cada-iteración).
 
+### Estado al 23/11/2026
+
+La rama local `feat/skill-p4` parte de `origin/main` en `ac371d5`, que incorpora los PR #9 (Mateo) y #10 (Adrián). Los entregables de Lucía siguen como cambios locales, pendientes de commit y PR.
+
+| Iteración | Avance comprobado | Para cerrar |
+|---|---|---|
+| 0 · Skill e informe | Se localizó «Caja de Enigmas» en desarrollo y en Spanish (US). El [informe P4](../../INFORME_P4.md) incluye el caso de uso, los criterios de aceptación y las secciones de la consigna. | Confirmar en el simulador que el endpoint responde y publicar el informe mediante PR. |
+| 1 · Modelo y pistas | El [modelo es-US](../../config/alexa/modelo-interaccion.es-US.json) se guardó y compiló en Alexa. Incluye 8 intents nuevos, 13 propios en total y 88 frases. Se retiró `ConsultarTapaIntent`, se ajustaron seis frases y se obtuvo 88/88 intents correctos en la segunda prueba. El [catálogo](../../lambda/pistas.py) aporta 3 pistas por desafío. | Confirmar los IDs canónicos de slots en el JSON del simulador. Acordar con Mateo la selección de pistas y conectar `PISTAS_POR_DESAFIO` al parámetro `obtener_pista`, que sigue en `None` en el backend de la rama. |
+| 2 · Reportes y voz | [Mockup RF15](../mockups/README.md) con consultas documentadas. [Matriz de voz](../../INFORME_P4.md#41-reconocimiento-de-frases) con 88 resultados del evaluador, 15 casos de integración y dos secuencias de voz. | Probar con Mateo en `caja-enigmas-02`. Registrar la respuesta y, cuando corresponda, el Shadow o evento persistido. Revisar la variante con «centímetros», cuyo número no se resolvió en el evaluador. |
+| 3 · Prueba física y costo | El firmware 0.4.0 integra la partida y los eventos. Adrián aportó la estimación preliminar de tráfico y el [borrador técnico](../informe-p4-adrian.md). | Ejecutar la prueba de voz en `caja-enigmas-01`, la caja física, y guardar evidencias. Incorporar mediciones de Adrián y los conteos de Lambda y DynamoDB de Mateo. Contrastar con la capa gratuita aplicable. |
+| 4 · Entrega | El borrador de Lucía ya referencia los aportes técnicos incorporados a `main`. | Consolidar los resultados físicos y de nube, completar conclusiones y anexos, revisar enlaces y tramitar el PR. Meta interna del grupo: 24/11 a las 14:00. Límite de la consigna: 17:45 de La Paz. |
+
+**RF4.** El contrato §7 y el modelo P4 incorporan `ConsultarSensoresIntent`. El resultado con Alexa y el Shadow de la caja de pruebas se registra en INT-16.
+
+El reconocimiento por texto en Utterance Profiler ya está documentado. Siguen pendientes las evidencias del simulador con la Lambda, de persistencia de pistas en DynamoDB y de operación de extremo a extremo.
+
+#### Coordinación con Mateo
+
+El 24/11 se verificó en Git la revisión `3dd2319` de la rama `feat/lambda-p4`. Mateo informó el despliegue de P4 en AWS, pruebas de RF4 con el Shadow y DynamoDB y 151 pruebas locales aprobadas. El catálogo de Lucía está listo para la integración. Queda confirmar la conexión en producción y preparar los [tres estados de prueba](../../INFORME_P4.md#estados-de-prueba-para-caja-enigmas-02).
+
+- **Pistas:** Mateo implementó la secuencia 1 → 2 → 3 → 3 con reinicio por desafío, partida o sesión. Su proveedor recibe `(desafio, nivel)`. El archivo `lambda/pistas.py` contiene `PISTAS_POR_DESAFIO[desafio][nivel - 1]`. Falta conectarlo y revisar en DynamoDB un evento por pista entregada.
+- **RF4:** Mateo implementó el manejador sin slots. Lucía añadió el intent y seis frases al modelo. El borrador compiló el 24/11 y las seis frases seleccionaron el intent esperado en Utterance Profiler. El manejador informa la medición disponible e identifica la ausente cuando recibe un reporte parcial.
+- **Informe:** pedir a Mateo las evidencias disponibles de CloudWatch y DynamoDB, las exportaciones pendientes y los conteos con su ventana de medición para cerrar los resultados y los costos.
+
 ### Iteración 0 — vie 20
 - **Qué quedó funcionando:**
 - **Archivos, commits y PR:**

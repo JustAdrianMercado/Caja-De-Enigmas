@@ -41,20 +41,6 @@
           ]
         },
         {
-          "name": "ConsultarTapaIntent",
-          "slots": [],
-          "samples": [
-            "cómo está la caja",
-            "cómo está la tapa",
-            "la tapa está abierta",
-            "la tapa está cerrada",
-            "consulta la tapa",
-            "dime el estado de la tapa",
-            "está abierta la tapa",
-            "está cerrada la tapa"
-          ]
-        },
-        {
           "name": "ConsultarCerraduraIntent",
           "slots": [],
           "samples": [
@@ -115,9 +101,218 @@
         {
           "name": "AMAZON.NavigateHomeIntent",
           "samples": []
+        },
+        {
+          "name": "IniciarPartidaIntent",
+          "slots": [],
+          "samples": [
+            "empecemos a jugar",
+            "inicia una partida",
+            "comienza la partida",
+            "quiero jugar",
+            "inicia el juego",
+            "arranca una partida"
+          ]
+        },
+        {
+          "name": "PedirPistaIntent",
+          "slots": [],
+          "samples": [
+            "quiero una pista",
+            "dame una pista",
+            "necesito una pista",
+            "dame una sugerencia",
+            "pide una pista",
+            "dame una pista para este desafío"
+          ]
+        },
+        {
+          "name": "ConsultarProgresoIntent",
+          "slots": [],
+          "samples": [
+            "cómo voy",
+            "consulta mi desafío actual",
+            "dime mi progreso",
+            "cuál es mi progreso",
+            "cuál es mi desafío actual",
+            "consulta mi progreso"
+          ]
+        },
+        {
+          "name": "CambiarModoIntent",
+          "slots": [
+            {
+              "name": "modo",
+              "type": "TipoModo"
+            }
+          ],
+          "samples": [
+            "pon la caja en modo {modo}",
+            "activa el modo {modo}",
+            "cambia el modo a {modo}",
+            "usa el modo {modo}",
+            "cambia al modo {modo}",
+            "configura el modo {modo}"
+          ]
+        },
+        {
+          "name": "ConsultarModoIntent",
+          "slots": [],
+          "samples": [
+            "en qué modo está la caja",
+            "cuál es el modo actual",
+            "consulta el modo",
+            "dime el modo de la caja",
+            "dime el modo actual",
+            "consulta el modo de la caja"
+          ]
+        },
+        {
+          "name": "CambiarDificultadIntent",
+          "slots": [
+            {
+              "name": "dificultad",
+              "type": "TipoDificultad"
+            }
+          ],
+          "samples": [
+            "pon la dificultad en {dificultad}",
+            "sube la dificultad a {dificultad}",
+            "baja la dificultad a {dificultad}",
+            "ajusta la dificultad a {dificultad}",
+            "configura la dificultad en {dificultad}",
+            "cambia la dificultad a {dificultad}"
+          ]
+        },
+        {
+          "name": "CambiarParametroIntent",
+          "slots": [
+            {
+              "name": "parametro",
+              "type": "TipoParametro"
+            },
+            {
+              "name": "valor",
+              "type": "AMAZON.NUMBER"
+            }
+          ],
+          "samples": [
+            "cambia la {parametro} a {valor}",
+            "ajusta el {parametro} a {valor}",
+            "configura {parametro} en {valor}",
+            "pon {parametro} en {valor}",
+            "establece {parametro} en {valor}",
+            "fija {parametro} en {valor}"
+          ]
+        },
+        {
+          "name": "ConsultarParametrosIntent",
+          "slots": [],
+          "samples": [
+            "cuáles son los parámetros del juego",
+            "consulta los parámetros",
+            "dime la configuración del juego",
+            "dime los parámetros activos del juego",
+            "lee los ajustes del juego",
+            "consulta la configuración del juego"
+          ]
+        },
+        {
+          "name": "ConsultarSensoresIntent",
+          "slots": [],
+          "samples": [
+            "consulta las lecturas de los sensores",
+            "dime la distancia y la luz",
+            "dime la distancia medida",
+            "dime cuánta luz mide la caja",
+            "consulta las mediciones de la caja",
+            "dime las lecturas de distancia y luz"
+          ]
         }
       ],
-      "types": []
+      "types": [
+        {
+          "name": "TipoModo",
+          "values": [
+            {
+              "id": "juego",
+              "name": {
+                "value": "juego",
+                "synonyms": [
+                  "jugar",
+                  "automático"
+                ]
+              }
+            },
+            {
+              "id": "manual",
+              "name": {
+                "value": "manual",
+                "synonyms": [
+                  "operador"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TipoDificultad",
+          "values": [
+            {
+              "id": "facil",
+              "name": {
+                "value": "fácil",
+                "synonyms": [
+                  "facil",
+                  "sencillo"
+                ]
+              }
+            },
+            {
+              "id": "normal",
+              "name": {
+                "value": "normal",
+                "synonyms": [
+                  "medio"
+                ]
+              }
+            },
+            {
+              "id": "dificil",
+              "name": {
+                "value": "difícil",
+                "synonyms": [
+                  "dificil",
+                  "complicado"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "TipoParametro",
+          "values": [
+            {
+              "id": "distanciaObjetivoCm",
+              "name": {
+                "value": "distancia objetivo",
+                "synonyms": [
+                  "distancia"
+                ]
+              }
+            },
+            {
+              "id": "umbralLuzPorcentaje",
+              "name": {
+                "value": "umbral de luz",
+                "synonyms": [
+                  "luz"
+                ]
+              }
+            }
+          ]
+        }
+      ]
     },
     "dialog": {
       "delegationStrategy": "ALWAYS",
