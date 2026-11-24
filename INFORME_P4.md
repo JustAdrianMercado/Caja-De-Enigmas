@@ -115,17 +115,471 @@ sequenceDiagram
 
 El [mockup del panel RF15](docs/mockups/README.md) reúne partidas iniciadas y resueltas, tasa de éxito, tiempo medio, fallos, pistas, historial y alertas. La guía identifica las claves y los filtros que sustentan cada dato.
 
-### 2.4 Arquitectura, Shadow y reglas automáticas
+### 2.4 Diagrama de arquitectura del sistema *(Adrián)*
 
-El ESP32 decide el progreso y el desbloqueo a partir de los sensores locales. Alexa consulta el estado y envía órdenes mediante el Device Shadow. AWS IoT enruta los reportes y eventos a la Lambda de almacenamiento. La Lambda de vigilancia busca lecturas recientes en DynamoDB y registra una alerta cuando falta el reporte de una caja. El panel consulta esas alertas mediante el índice `alertas-por-fecha`.
+```mermaid
+flowchart LR
+    U(["Jugador u operador"]) -- voz --> ECHO["Dispositivo Echo"]
+    ECHO --> ASK["Alexa Skills Kit<br/>skill caja de enigmas"]
+    ASK --> LS["Lambda caja-enigmas-skill<br/>(backend de la skill)"]
 
-El [aporte de Adrián](docs/informe-p4-adrian.md) incluye los diagramas de arquitectura, clases, estados y secuencias automáticas. El [contrato actualizado](docs/contratos.md) especifica el Shadow y las reglas de publicación e histórico.
+    subgraph EDGE["Objeto inteligente: ESP32 caja-enigmas-01"]
+        PE["PartidaEnigmas<br/>(lógica del Edge)"]
+        COLA["ColaEventos<br/>(20 eventos sin conexión)"]
+        ES["EstadoShadow"]
+    end
+
+    subgraph IOT["AWS IoT Core (us-east-1)"]
+        SH[("Device Shadow<br/>desired / reported / delta")]
+        TE["Tema caja-enigmas/+/eventos"]
+        RL{{"Regla CajaEnigmasLecturas"}}
+        RE{{"Regla CajaEnigmasEventos"}}
+    end
+
+    EB["EventBridge<br/>rate(5 minutes)"] --> LV["Lambda caja-enigmas-vigilancia<br/>(lógica de la Nube)"]
+    LA["Lambda caja-enigmas-almacenamiento<br/>(valida y guarda)"]
+    TV[("DynamoDB<br/>CajaEnigmasVinculaciones")]
+    TH[("DynamoDB<br/>CajaEnigmasHistorico<br/>GSI alertas-por-fecha, TTL")]
+
+    ES <-->|"MQTT/TLS: update, delta, get"| SH
+    COLA -- "MQTT/TLS: eventos" --> TE
+    LS -- "GetThingShadow / UpdateThingShadow (desired)" --> SH
+    LS -- "Publish evento pista" --> TE
+    LS -- "GetItem / PutItem / DeleteItem" --> TV
+    SH -- "update/accepted" --> RL --> LA
+    TE --> RE --> LA
+    LA -- PutItem --> TH
+    LV -- "ListThings" --> IOT
+    LV -- "Query / PutItem alerta" --> TH
+```
+
+- **Un dispositivo, tres funciones Lambda y una responsabilidad cada una:**
+  - la skill atiende la voz;
+  - la de almacenamiento valida y guarda;
+  - la de vigilancia ejecuta la regla de la Nube.
+
+  Así cada rol tiene solo los permisos que usa: la de almacenamiento solo escribe, y la de vigilancia no puede tocar los Shadows. Además, cada función se invoca con su propia frecuencia: la de almacenamiento con cada mensaje y la de vigilancia cada 5 min.
+- **Alexa y la Nube nunca hablan directo con el ESP32.** La voz cambia `desired` y el ESP32 lo recibe en el `delta`. Lo único que publica fuera del Shadow es el tema de eventos.
+- **Dos temas de entrada para el histórico:**
+  - las lecturas viajan en el reporte del Shadow (regla `CajaEnigmasLecturas`);
+  - los eventos discretos van en un tema propio (regla `CajaEnigmasEventos`), porque no son estado sino cosas que pasaron, como "se superó la memoria en 18 s con 2 intentos".
+
+### 2.5 Especificación del documento Shadow v2 *(Adrián)*
+
+Shadow clásico, sin nombre. La especificación completa, con ejemplos, está en [contratos.md, sección 2](docs/contratos.md#2-documento-shadow-shadow-clásico-sin-nombre).
+
+| Atributo | Sección | Tipo | Valores válidos | Por defecto |
+|---|---|---|---|---|
+| `cerradura` | `desired` / `reported` | string | `abierta`, `cerrada` | `cerrada` |
+| `modo` | `desired` / `reported` | string | `juego`, `manual` | `juego` |
+| `dificultad` | `desired` / `reported` | string | `facil`, `normal`, `dificil` | `normal` |
+| `distanciaObjetivoCm` | `desired` / `reported` | entero | 10–40 | 20 |
+| `umbralLuzPorcentaje` | `desired` / `reported` | entero | 10–95 | 70 |
+| `solicitudPartida` | `desired` / `reported` | entero | ≥ 0 | 0 |
+| `longitudSecuencia` | `reported` | entero | 3, 4 o 6 (según la dificultad) | 4 |
+| `toleranciaCm` | `reported` | entero | 6, 4 o 2 (según la dificultad) | 4 |
+| `estadoPartida` | `reported` | string | `esperando`, `en_curso`, `resuelta` | `esperando` |
+| `desafioActual` | `reported` | string | `memoria`, `distancia`, `luz`, `ninguno` | `ninguno` |
+| `idPartida` | `reported` | entero | ≥ 0 | 0 |
+| `distanciaCm` | `reported` | entero | 2–400; se omite sin lectura válida | — |
+| `luzPorcentaje` | `reported` | entero | 0–100 | — |
+| `codigoVinculacion` | `reported` | string | 4 dígitos | generado en el primer arranque |
+| `firmware` | `reported` | string | versión, p. ej. `0.4.0` | — |
+
+**Uso de cada sección:**
+- **`desired`** lo escribe solo la Lambda de la skill: la cerradura (en modo manual), el modo, la dificultad, los dos parámetros de calibración y `solicitudPartida`.
+- **`reported`** lo escribe solo el ESP32:
+  - en cada cambio, en menos de 1 s;
+  - cada 60 s como respaldo, con las lecturas de los sensores;
+  - en cada cambio de desafío.
+- **`delta`** lo calcula AWS. El ESP32 lo recibe por `update/delta` y, al reconectar, en el `get/accepted`. Lee cada atributo por separado, ignora los desconocidos y descarta los valores inválidos, por ejemplo `"20"`, `70.5`, `-1` o `276`. Después reporta su estado real, y así el `delta` desaparece.
+
+**Decisiones de diseño:**
+- **`solicitudPartida` es un contador y no un texto como `"iniciar"`.** La skill escribe el valor reportado + 1. El ESP32 inicia una partida solo si recibe un valor distinto del suyo, así que la misma orden repetida (por ejemplo, en el `get` de cada reconexión) no inicia dos partidas.
+- **La dificultad fija `longitudSecuencia` y `toleranciaCm`, que solo se reportan.** La distancia objetivo y el umbral de luz son de calibración y se cambian por separado, así no se pisan.
+- **El modo, la dificultad, los parámetros y los contadores se guardan en la NVS.** Después de un reinicio sin red, la caja sigue configurada igual y no repite un `idPartida`.
+
+### 2.6 Diagrama de clases del objeto inteligente *(Adrián y Santiago)*
+
+```mermaid
+classDiagram
+    direction LR
+    class Desafio {
+        <<interface>>
+        +iniciar(parametros)
+        +actualizar()
+        +detener()
+        +resultado() ResultadoDesafio
+        +nombre() const char*
+    }
+    class DesafioMemoria
+    class DesafioDistancia
+    class DesafioLuz
+    Desafio <|.. DesafioMemoria
+    Desafio <|.. DesafioDistancia
+    Desafio <|.. DesafioLuz
+    DesafioMemoria --> IndicadorLeds
+    DesafioMemoria --> Pulsador : 3 colores
+    DesafioDistancia --> SensorDistancia
+    DesafioDistancia --> IndicadorLeds
+    DesafioLuz --> SensorLuz
+    DesafioLuz --> IndicadorLeds
+
+    class ReceptorEventos {
+        <<interface>>
+        +recibirEvento(evento)
+    }
+    class PartidaEnigmas {
+        -configuracion_
+        -estado_
+        -indiceDesafio_
+        -intentos_
+        -idPartida_
+        -solicitudPartida_
+        +establecerConfiguracion(configuracion)
+        +pulsarInicio(ahoraMs)
+        +recibirSolicitudPartida(valor, ahoraMs)
+        +actualizar(ahoraMs)
+        +estado()
+        +desafioActual()
+    }
+    PartidaEnigmas o-- "3" Desafio
+    PartidaEnigmas --> ReceptorEventos
+    PartidaEnigmas ..> EventoCaja : produce
+    ReceptorEventos <|.. ReceptorCaja
+
+    class ReceptorCaja {
+        +recibirEvento(evento)
+    }
+    note for ReceptorCaja "Definido en main.cpp: mueve el servo,\nguarda el idPartida y encola el evento"
+    ReceptorCaja --> CerraduraServo
+    ReceptorCaja --> ColaEventos
+    ReceptorCaja --> AlmacenParametros
+
+    class ConfiguracionJuego {
+        +modo
+        +dificultad
+        +distanciaObjetivoCm
+        +umbralLuzPorcentaje
+        +parametros() ParametrosJuego
+        +aceptaOrdenesDeCerradura()
+        +desdeValoresGuardados(...)$
+    }
+    class ParametrosJuego {
+        +longitudSecuencia
+        +toleranciaCm
+        +distanciaObjetivoCm
+        +umbralLuzPorcentaje
+        +armar(dificultad, distancia, umbral)$
+    }
+    ConfiguracionJuego ..> ParametrosJuego
+    PartidaEnigmas --> ConfiguracionJuego
+
+    class EstadoShadow {
+        +establecerCerradura(estado)
+        +establecerConfiguracion(configuracion)
+        +establecerPartida(estado, desafio, id, solicitud)
+        +actualizarLecturas(distanciaCm, luzPorcentaje)
+        +escribirReporte(destino, capacidad)
+        +leerOrdenesDelta(json, ordenes)$
+        +leerOrdenesDocumentoCompleto(json, ordenes)$
+    }
+    class OrdenesShadow {
+        +aplicarA(configuracion) ConfiguracionJuego
+        +pideMoverCerradura(configuracion)
+        +hayAlgunaInvalida()
+    }
+    EstadoShadow ..> OrdenesShadow : lee del delta
+
+    class AlmacenParametros {
+        +cargarConfiguracion()
+        +guardarConfiguracion(configuracion)
+        +guardarIdPartida(id)
+        +guardarSolicitudPartida(valor)
+    }
+    class ColaEventos {
+        +agregar(json)
+        +primero()
+        +quitarPrimero()
+        +registrarFalloDelPrimero()
+        +descartados()
+    }
+    class EventoJson {
+        +escribir(evento, tsObjeto, destino, capacidad)$
+    }
+    class RelojUtc {
+        +escribirAhora(destino, capacidad)$
+    }
+    class ConexionAwsIot {
+        +actualizar()
+        +tomarMensaje(destino)
+        +publicarActualizacion(documento)
+        +publicarEvento(json)
+    }
+    ConexionAwsIot --> ConexionWifi
+    ReceptorCaja ..> EventoJson
+    ReceptorCaja ..> RelojUtc
+```
+
+- **Clases de Santiago (hardware):** `Desafio*`, `IndicadorLeds`, `Pulsador`, `SensorDistancia`, `SensorLuz` y `CerraduraServo`.
+- **Clases de Adrián:** la partida, el Shadow, la persistencia, los eventos y la conexión.
+- `main.cpp` arma todos los objetos y los une en `loop()`, sin lógica de negocio propia.
+- **Lógica pura, sin Arduino:** `PartidaEnigmas`, `EstadoShadow`, `ParametrosJuego`/`ConfiguracionJuego`, `EventoJson`, `ColaEventos` y `RelojUtc`. Por eso se prueban en la PC (sección 4).
+- **La partida no conoce el hardware:**
+  - recibe los tres desafíos como `Desafio&`;
+  - avisa lo que pasa a un `ReceptorEventos`, incluido cuándo cerrar o abrir la cerradura;
+  - en las pruebas, el receptor es un doble que anota los eventos.
+
+### 2.7 Diagrama de clases de la Lambda de vigilancia *(Adrián)*
+
+```mermaid
+classDiagram
+    class lambda_function {
+        <<módulo>>
+        +lambda_handler(event, context)
+        +leer_configuracion(entorno)
+        +crear_vigilancia()
+    }
+    class VigilanciaCajas {
+        -limite_ms
+        +revisar() resumen
+        +revisar_caja(thing_name, ahora_ms) dict
+        +armar_alerta(thing_name, ahora_ms, ultima_lectura)$
+    }
+    class UltimoRegistro {
+        <<dataclass>>
+        +tipo
+        +fecha
+        +momento_ms
+    }
+    class InventarioThings {
+        +listar_cajas()
+    }
+    class RepositorioHistorico {
+        +ultimo_registro(thing_name) UltimoRegistro
+        +guardar_alerta(alerta)
+    }
+    lambda_function ..> VigilanciaCajas : arma
+    VigilanciaCajas --> InventarioThings
+    VigilanciaCajas --> RepositorioHistorico
+    RepositorioHistorico ..> UltimoRegistro
+    InventarioThings ..> AWS_IoT : ListThings
+    RepositorioHistorico ..> DynamoDB : Query / PutItem
+```
+
+`vigilancia.py` tiene la regla y no importa `boto3`: recibe el inventario, el histórico y el reloj ya armados. `lambda_function.py` solo lee las variables de entorno y crea los clientes de AWS.
+
+### 2.8 Diagramas de secuencia de las reglas automáticas *(Adrián)*
+
+**Regla del Edge: superar el último desafío abre la caja.**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant J as Jugador
+    participant DL as DesafioLuz
+    participant P as PartidaEnigmas
+    participant R as ReceptorCaja (main.cpp)
+    participant S as Servo SG90
+    participant C as ColaEventos
+    participant I as AWS IoT Core
+    participant LA as Lambda almacenamiento
+    participant T as CajaEnigmasHistorico
+    J->>DL: Ilumina la LDR (luz ≥ umbral durante 1 s)
+    P->>DL: actualizar() y resultado()
+    DL-->>P: Superado
+    P->>R: desafio_superado (luz, duración, intentos)
+    P->>R: cerradura abierta (origen edge)
+    R->>S: abrir()
+    P->>R: partida_resuelta (duración total)
+    R->>C: Encola los 3 eventos en JSON, con tsObjeto
+    Note over P,S: Todo en la misma vuelta de loop(), sin red
+    C->>I: Publish caja-enigmas/caja-enigmas-01/eventos (uno por vuelta)
+    I->>LA: Regla CajaEnigmasEventos
+    LA->>T: PutItem (evento validado)
+    Note over R,I: El Shadow reporta estadoPartida = resuelta y cerradura = abierta
+```
+
+**Regla de la Nube: caja sin reportar.**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant EB as EventBridge (cada 5 min)
+    participant LV as Lambda vigilancia
+    participant I as AWS IoT (ListThings)
+    participant T as CajaEnigmasHistorico
+    EB->>LV: Invocación programada
+    LV->>I: ListThings (todas las páginas)
+    I-->>LV: caja-enigmas-01, caja-enigmas-02
+    loop Cada caja
+        LV->>T: Query thingName, más nuevo primero, solo lecturas y alertas
+        T-->>LV: Último registro
+        alt Lectura de hace más de 15 min, o nunca reportó
+            LV->>T: PutItem alerta (categoriaAlerta = sin_reporte)
+        else Lectura reciente, o ya hay una alerta
+            Note over LV: No hace nada
+        end
+    end
+    LV-->>EB: Resumen {cajasRevisadas, alertasNuevas}
+```
+
+**Inicio de partida por voz: la orden repetida no inicia dos partidas.**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant A as Lambda skill
+    participant SH as Shadow
+    participant E as ESP32 (main.cpp)
+    participant P as PartidaEnigmas
+    A->>SH: GetThingShadow: reported.solicitudPartida = 7
+    A->>SH: UpdateThingShadow desired.solicitudPartida = 8
+    SH->>E: update/delta {solicitudPartida: 8}
+    E->>P: recibirSolicitudPartida(8)
+    P->>P: 8 ≠ 7 y modo juego: adopta e inicia
+    P-->>E: cerradura cerrada (edge), partida_iniciada (origen voz)
+    E->>E: Guarda 8 en la NVS
+    E->>SH: reported {solicitudPartida: 8, estadoPartida: en_curso, ...}
+    Note over SH,E: Al reconectar, get/accepted ya no trae delta.<br/>Si trajera 8 otra vez, 8 = 8: no hace nada.
+```
+
+**Operación sin conexión.**
+
+```mermaid
+sequenceDiagram
+    participant P as PartidaEnigmas
+    participant C as ColaEventos
+    participant X as ConexionAwsIot
+    participant I as AWS IoT Core
+    Note over X,I: WiFi cortado
+    P->>C: Eventos de la partida (el juego sigue)
+    Note over C: Hasta 20; si se llena, se descarta el más viejo y se cuenta
+    Note over X,I: WiFi vuelve: TLS, MQTT y get del Shadow
+    X->>I: Reporte completo del Shadow
+    loop Uno por vuelta de loop()
+        C->>X: primero()
+        X->>I: Publish en el tema de eventos (QoS 1)
+        I-->>X: PUBACK
+        X->>C: quitarPrimero()
+    end
+```
+
+### 2.9 Modos, estados y ubicación de cada regla *(Adrián)*
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    state "Modo juego" as Juego {
+        [*] --> Esperando
+        Esperando --> Memoria: pulsador de inicio o solicitudPartida nueva / cierra el servo
+        Memoria --> Memoria: fallo / desafio_fallado y reintento
+        Memoria --> Distancia: superado
+        Distancia --> Luz: superado (2 s en rango)
+        Luz --> Resuelta: superado (1 s con luz) / abre el servo
+        Resuelta --> Memoria: iniciar / cierra el servo
+        Memoria --> Memoria: iniciar (partida nueva)
+        Distancia --> Memoria: iniciar (partida nueva)
+        Luz --> Memoria: iniciar (partida nueva)
+    }
+    state "Modo manual" as Manual {
+        [*] --> SinPartida
+        SinPartida --> SinPartida: abrir o cerrar por voz
+    }
+    Juego --> Manual: desired.modo = manual / abandona la partida
+    Manual --> Juego: desired.modo = juego / la skill borra desired.cerradura
+```
+
+**Convivencia de la voz con la lógica automática:**
+
+| | Modo `juego` (por defecto) | Modo `manual` (operador) |
+|---|---|---|
+| Quién mueve la cerradura | Solo el juego: cierra al iniciar una partida y abre al resolverla. | Solo la voz. |
+| "Abre / cierra la caja" | La skill lo rechaza con una explicación, y el ESP32 también ignora `cerradura` en el `delta`. | Se aplica. |
+| "Inicia una partida" y pulsador de inicio | Inician una partida. | Se rechaza por voz; el pulsador no hace nada. |
+
+La regla está implementada en los dos lados:
+- la skill rechaza la orden;
+- el ESP32 ignora `cerradura` en modo juego.
+
+Así, una orden vieja de "abrir" que hubiera quedado en `desired` no puede abrir la caja en medio de una partida. Además, al pasar a modo juego la skill pone `desired.cerradura` en `null`.
+
+**Ubicación de cada regla:**
+
+| Regla | Dónde | Latencia | Sin conexión | Histórico | Costo de mensajes | Mantenimiento |
+|---|---|---|---|---|---|---|
+| Partida: validar cada desafío, avanzar y abrir el servo | **Edge** | Inmediata: la apertura ocurre en la misma vuelta de `loop()` en que se cumple la condición. | Sigue funcionando: los eventos se encolan. | No lo necesita: depende solo de los sensores locales. | No genera mensajes para decidir. | Los parámetros se cambian por voz sin reprogramar. |
+| Caja sin reportar (más de 15 min sin lecturas) | **Nube** | Hasta 15 + 5 = 20 min, suficiente para un aviso de mantenimiento. | Es justamente lo que detecta: el objeto no puede avisar de su propia desconexión. | La necesita: busca la última lectura de cada caja. | 288 invocaciones por día, sin mensajes del objeto. | El límite se cambia con una variable de entorno. |
+
+**Por qué la regla de la Nube no escribe en `desired`:** la consigna pide que la lógica de la Nube actúe sobre el objeto solo a través de `desired`. Esta regla no actúa sobre el objeto, porque el objeto está apagado o sin red. Su acción es dejar una alerta en el histórico para el operador, que la ve en el panel de reportes (patrón de acceso 6). Es el ejemplo que da la consigna: *"Si el Thing no reporta durante 15 min… se implementaría con otra Lambda ejecutada de forma programada"*.
 
 ## 3. Desarrollo e implementación
 
 El [firmware 0.4.0](firmware/src/main.cpp) integra los tres desafíos, el servo, el inicio por voz y el pulsador. La publicación de eventos sale de una cola de hasta 20 entradas, una por vuelta de `loop()`. Si la cola se llena, se descarta el más antiguo. Si se rechaza el mismo evento tres veces con la caja conectada, se descarta y se contabiliza.
 
 El backend de Mateo registra los ocho intents nuevos. El [almacenamiento](lambda-almacenamiento/README.md) valida lecturas y eventos antes de guardarlos. La [vigilancia](lambda-vigilancia/README.md) consulta la tabla principal y distingue lecturas de eventos al comprobar si la caja sigue reportando. El código de los tres componentes está en la base local. La configuración y las evidencias de despliegue se incorporarán a partir de los registros de cada responsable. El montaje y la calibración finales siguen a cargo de Santiago.
+
+### 3.1 Estructura del código del objeto inteligente *(Adrián y Santiago)*
+
+| Módulo | Responsabilidad | Autor |
+|---|---|---|
+| [main.cpp](firmware/src/main.cpp) | Arma los objetos y los une en `loop()`. Define `ReceptorCaja`. | Adrián |
+| [PartidaEnigmas](firmware/src/PartidaEnigmas.cpp) | Máquina de estados de la partida (regla del Edge). | Adrián |
+| [EstadoShadow](firmware/src/EstadoShadow.cpp) | Lee el `delta` y arma el `reported`. | Adrián |
+| [ParametrosJuego / ConfiguracionJuego](firmware/src/ParametrosJuego.cpp) | Tabla de dificultades, rangos y configuración por voz. | Adrián |
+| [AlmacenParametros](firmware/src/AlmacenParametros.cpp) | Persistencia en la NVS. | Adrián |
+| [EventoJson](firmware/src/EventoJson.cpp), [ColaEventos](firmware/src/ColaEventos.cpp), [RelojUtc](firmware/src/RelojUtc.cpp) | Formato, cola sin conexión y hora de los eventos. | Adrián |
+| [ConexionWifi](firmware/src/ConexionWifi.cpp), [ConexionAwsIot](firmware/src/ConexionAwsIot.cpp) | Red, TLS mutuo y MQTT. | Adrián |
+| `Desafio*`, `IndicadorLeds`, `Pulsador`, `SensorDistancia`, `SensorLuz`, `CerraduraServo` | Hardware y los tres desafíos. | Santiago |
+
+**Fragmentos clave:**
+- **`loop()` nunca se bloquea.** Los desafíos miden el tiempo con `millis()`, y `pulseIn` tiene un límite de 25 ms. Además, la cola publica un solo evento por vuelta, porque cada publicación QoS 1 espera el PUBACK.
+- **`aplicarOrdenes()` aplica primero la configuración y después la cerradura y la solicitud.** Si un mismo `delta` trae `modo: manual` y `cerradura: abierta`, el modo nuevo es el que decide si se obedece la cerradura.
+- **`tomarLecturas()` no mide la distancia mientras corre ese desafío.** `SensorDistancia::actualizar()` entrega cada medición nueva una sola vez, así que otra llamada se la quitaría al desafío.
+- **Cada evento se convierte a JSON en el momento en que ocurre.** Así `tsObjeto` es la hora del evento y no la de la publicación, que puede ser minutos después si no había red.
+- **`EventoJson` escribe solo los campos de cada tipo.** La Lambda de almacenamiento valida todos los campos que llegan, y un campo de más con un valor fuera de rango (por ejemplo, `intentos: 0`) haría descartar el evento entero.
+
+### 3.2 Configuración de AWS IoT Core *(Adrián)*
+
+| Elemento | Valor |
+|---|---|
+| Things | `caja-enigmas-01` (la caja) y `caja-enigmas-02` (sin placa, para probar varios usuarios y la alerta). |
+| Certificado | X.509 por Thing, emitido por AWS IoT. La clave privada vive solo en `firmware/include/ConfiguracionAws.h`, que está en `.gitignore`. |
+| Política | `CajaEnigmasPolitica` v2 ([config/aws/politica-iot.json](config/aws/politica-iot.json)). |
+
+**Permisos de la política, cada uno limitado al Thing de la conexión** con `${iot:Connection.Thing.ThingName}`:
+
+| Sentencia | Permiso | Por qué |
+|---|---|---|
+| `ConectarSoloComoSuThing` | `iot:Connect` como `client/<su Thing>`, solo si el certificado está asociado al Thing. | Ningún certificado puede conectarse como otra caja. |
+| `PublicarYRecibirEnSuShadow` | `iot:Publish` e `iot:Receive` en `$aws/things/<su Thing>/shadow/*`. | Reportar y recibir el `delta` de su propio Shadow. |
+| `PublicarSusEventos` | `iot:Publish` en `caja-enigmas/<su Thing>/eventos`. | Nuevo en la v2. Por eso la regla de eventos puede tomar el `thingName` del tema sin confiar en el payload. |
+| `SuscribirseASuShadow` | `iot:Subscribe` en `$aws/things/<su Thing>/shadow/*`. | Suscribirse a `update/delta` y `get/accepted`. |
+
+Ya es la política mínima: no usa comodines entre Things, y el objeto no puede suscribirse al tema de eventos ni leerlo.
+
+### 3.3 Configuración de la Lambda de vigilancia y de la regla programada *(Adrián)*
+
+| Elemento | Valor |
+|---|---|
+| Función | `caja-enigmas-vigilancia`, Python 3.12, 128 MB, *timeout* de 30 s. Código en [lambda-vigilancia/](lambda-vigilancia/README.md). |
+| Disparador | Regla de EventBridge `caja-enigmas-vigilancia-cada-5-min`, `rate(5 minutes)` ([config/aws/regla-vigilancia.json](config/aws/regla-vigilancia.json)). |
+| Variables | `TABLA_HISTORICO=CajaEnigmasHistorico`, `PREFIJO_THING=caja-enigmas-`, `MINUTOS_SIN_REPORTE=15`. |
+| Rol | `caja-enigmas-vigilancia-rol` ([config/aws/politica-rol-vigilancia.json](config/aws/politica-rol-vigilancia.json)). |
+
+**Permisos del rol:**
+
+| Permiso | Recurso | Por qué |
+|---|---|---|
+| `logs:CreateLogGroup`, `CreateLogStream`, `PutLogEvents` | Su propio grupo de logs | Registrar cada revisión. |
+| `iot:ListThings` | `*` | Revisar también las cajas que nunca reportaron. Esta acción no admite permisos por recurso. |
+| `dynamodb:Query`, `dynamodb:PutItem` | Solo la tabla `CajaEnigmasHistorico` | Leer la última lectura y guardar la alerta. No puede borrar ni modificar ítems. |
+
+- La regla de EventBridge **no usa un rol IAM**: invoca la función con el permiso basado en recursos que la consola agrega al crear el disparador.
+- A diferencia del ejemplo de la consigna, esta Lambda **no necesita `iot:UpdateThingShadow`**, porque no actúa sobre el objeto.
+- Los permisos asignados **ya son los mínimos de producción**. La única mejora posible sería reemplazar `ListThings` por un grupo de Things, si hubiera muchas cajas.
+
+### 3.4 Configuración de Alexa
 
 La [guía de Alexa](config/alexa/README.md) documenta la importación y compilación del modelo, la evaluación de las frases y la coordinación del endpoint. [El módulo de pistas](lambda/pistas.py) contiene tres textos por desafío ordenados de menor a mayor ayuda. La selección y su publicación como evento se integran con Mateo en la Lambda.
 
@@ -140,6 +594,10 @@ El 23/11/2026 se importó el modelo en el borrador de desarrollo de «Caja de En
 La tabla registra las entradas de texto y los valores de slot que mostró Utterance Profiler. Quedan por comprobar los IDs canónicos en el JSON de solicitud del simulador, las respuestas de Lambda y los efectos sobre el Shadow y el histórico.
 
 El 24/11/2026 se compiló el modelo con RF4. Las seis frases nuevas seleccionaron `ConsultarSensoresIntent`. Se comprobó también que cuatro frases de control conservaban sus intents de progreso, parámetros, cerradura y cambio de distancia.
+
+En la revisión final del 24/11 se añadieron diez frases a sensores y diez a progreso. Las **114 frases de la matriz** seleccionaron el intent esperado en Utterance Profiler. Las consultas que habían seleccionado desvinculación o Fallback se corrigieron y quedaron respaldadas con capturas. Los seis diálogos de vinculación incompletos pidieron los datos faltantes.
+
+El evaluador muestra el texto de los slots. La columna de slots esperados anota su ID canónico según el modelo. «Automático» corresponde a `juego`, «sencillo» a `facil` y «umbral de luz» a `umbralLuzPorcentaje`. Queda pendiente observar los IDs enviados a Lambda en **Skill I/O**.
 
 El prefijo de cada caso indica el intent y el resultado funcional esperado. Para control de cerradura, usar modo manual. Para inicio y pistas, usar modo juego y restaurar el estado de prueba entre casos según corresponda.
 
@@ -220,10 +678,20 @@ El prefijo de cada caso indica el intent y el resultado funcional esperado. Para
 | PRO-4 | cuál es mi progreso | — | `ConsultarProgresoIntent`. |
 | PRO-5 | cuál es mi desafío actual | — | `ConsultarProgresoIntent`. |
 | PRO-6 | consulta mi progreso | — | `ConsultarProgresoIntent`. |
+| PRO-7 | en qué desafío voy | — | `ConsultarProgresoIntent`. [Captura](docs/evidencias/alexa-p4/pro-7.jpg) |
+| PRO-8 | en qué desafío va mi caja | — | `ConsultarProgresoIntent`. |
+| PRO-9 | dime mi desafío actual | — | `ConsultarProgresoIntent`. |
+| PRO-10 | qué desafío está activo en mi caja | — | `ConsultarProgresoIntent`. |
+| PRO-11 | cómo voy en la partida | — | `ConsultarProgresoIntent`. |
+| PRO-12 | cómo va mi partida | — | `ConsultarProgresoIntent`. |
+| PRO-13 | muéstrame mi progreso | — | `ConsultarProgresoIntent`. |
+| PRO-14 | dime mi etapa actual | — | `ConsultarProgresoIntent`. |
+| PRO-15 | cuál es mi progreso actual | — | `ConsultarProgresoIntent`. |
+| PRO-16 | dime el progreso de mi caja | — | `ConsultarProgresoIntent`. |
 | MOD-1 | pon la caja en modo manual | `modo → manual` | `CambiarModoIntent`. Se mostraron `modo:manual`. |
 | MOD-2 | activa el modo juego | `modo → juego` | `CambiarModoIntent`. Se mostraron `modo:juego`. |
 | MOD-3 | cambia el modo a operador | `modo → manual` | `CambiarModoIntent`. Se mostraron `modo:operador`. |
-| MOD-4 | usa el modo automático | `modo → juego` | `CambiarModoIntent`. Se mostraron `modo:automatico`. |
+| MOD-4 | usa el modo automático | `modo → juego` | `CambiarModoIntent`. Se mostraron `modo:automatico`. [Captura](docs/evidencias/alexa-p4/mod-4.jpg) |
 | MOD-5 | cambia al modo manual | `modo → manual` | `CambiarModoIntent`. Se mostraron `modo:manual`. |
 | MOD-6 | configura el modo juego | `modo → juego` | `CambiarModoIntent`. Se mostraron `modo:juego`. |
 | CMO-1 | en qué modo está la caja | — | `ConsultarModoIntent`. |
@@ -234,12 +702,12 @@ El prefijo de cada caso indica el intent y el resultado funcional esperado. Para
 | CMO-6 | consulta el modo de la caja | — | `ConsultarModoIntent`. |
 | DIF-1 | pon la dificultad en difícil | `dificultad → dificil` | `CambiarDificultadIntent`. Se mostraron `dificultad:dificil`. |
 | DIF-2 | sube la dificultad a complicado | `dificultad → dificil` | `CambiarDificultadIntent`. Se mostraron `dificultad:complicado`. |
-| DIF-3 | baja la dificultad a sencillo | `dificultad → facil` | `CambiarDificultadIntent`. Se mostraron `dificultad:sencillo`. |
+| DIF-3 | baja la dificultad a sencillo | `dificultad → facil` | `CambiarDificultadIntent`. Se mostraron `dificultad:sencillo`. [Captura](docs/evidencias/alexa-p4/dif-3.jpg) |
 | DIF-4 | ajusta la dificultad a medio | `dificultad → normal` | `CambiarDificultadIntent`. Se mostraron `dificultad:medio`. |
 | DIF-5 | configura la dificultad en fácil | `dificultad → facil` | `CambiarDificultadIntent`. Se mostraron `dificultad:facil`. |
 | DIF-6 | cambia la dificultad a normal | `dificultad → normal` | `CambiarDificultadIntent`. Se mostraron `dificultad:normal`. |
 | PAR-1 | cambia la distancia objetivo a veinte | `parametro → distanciaObjetivoCm`, `valor = 20` | `CambiarParametroIntent`. Se mostraron `parametro:distancia objetivo valor:20`. |
-| PAR-2 | ajusta el umbral de luz a setenta | `parametro → umbralLuzPorcentaje`, `valor = 70` | `CambiarParametroIntent`. Se mostraron `parametro:umbral de luz valor:70`. |
+| PAR-2 | ajusta el umbral de luz a setenta | `parametro → umbralLuzPorcentaje`, `valor = 70` | `CambiarParametroIntent`. Se mostraron `parametro:umbral de luz valor:70`. [Captura](docs/evidencias/alexa-p4/par-2.jpg) |
 | PAR-3 | configura distancia en veinticinco | `parametro → distanciaObjetivoCm`, `valor = 25` | `CambiarParametroIntent`. Se mostraron `parametro:distancia valor:25`. |
 | PAR-4 | pon luz en ochenta | `parametro → umbralLuzPorcentaje`, `valor = 80` | `CambiarParametroIntent`. Se mostraron `parametro:luz valor:80`. |
 | PAR-5 | establece distancia objetivo en treinta | `parametro → distanciaObjetivoCm`, `valor = 30` | `CambiarParametroIntent`. Se mostraron `parametro:distancia objetivo valor:30`. |
@@ -256,6 +724,16 @@ El prefijo de cada caso indica el intent y el resultado funcional esperado. Para
 | SEN-4 | dime cuánta luz mide la caja | — | `ConsultarSensoresIntent`. |
 | SEN-5 | consulta las mediciones de la caja | — | `ConsultarSensoresIntent`. |
 | SEN-6 | dime las lecturas de distancia y luz | — | `ConsultarSensoresIntent`. |
+| SEN-7 | cuánta luz tiene mi caja | — | `ConsultarSensoresIntent`. [Captura](docs/evidencias/alexa-p4/sen-7.jpg) |
+| SEN-8 | qué distancia marca mi caja | — | `ConsultarSensoresIntent`. [Captura](docs/evidencias/alexa-p4/sen-8.jpg) |
+| SEN-9 | cómo están los sensores de mi caja | — | `ConsultarSensoresIntent`. [Captura](docs/evidencias/alexa-p4/sen-9.jpg) |
+| SEN-10 | cómo están los sensores | — | `ConsultarSensoresIntent`. |
+| SEN-11 | cuánta luz detecta mi caja | — | `ConsultarSensoresIntent`. |
+| SEN-12 | qué distancia mide mi caja | — | `ConsultarSensoresIntent`. |
+| SEN-13 | dime las mediciones de mi caja | — | `ConsultarSensoresIntent`. |
+| SEN-14 | dime qué marcan los sensores | — | `ConsultarSensoresIntent`. |
+| SEN-15 | cuánto mide el sensor de distancia | — | `ConsultarSensoresIntent`. |
+| SEN-16 | dime el porcentaje de luz de mi caja | — | `ConsultarSensoresIntent`. |
 
 ### 4.2 Integración de voz y rechazos
 
@@ -297,7 +775,7 @@ Para RF4, usar `distanciaCm = 23` y `luzPorcentaje = 68` para verificar la respu
 | INT-12 | Dos cuentas con cajas distintas | Cada cuenta consulta y controla su propia caja. | Pendiente |
 | INT-13 | «cuáles son los parámetros del juego» con reporte parcial | Alexa informa solo los campos disponibles y advierte que el reporte está incompleto. | Pendiente |
 | INT-14 | Probar «ayuda», «cancela», «para», «ve al inicio» y una petición fuera de tema | Se resuelven Help, Cancel, Stop, NavigateHome y Fallback. Registrar cada variante por separado. | Pendiente |
-| INT-15 | «cambia la distancia objetivo a veinte centímetros» | Verificar que la variante con unidad resuelva `CambiarParametroIntent` con `distanciaObjetivoCm` y valor `20`. | En ambas compilaciones, Utterance Profiler seleccionó `CambiarParametroIntent` y mostró `valor:?`. La frase sin unidad (PAR-1) devolvió `valor:20`. |
+| INT-15 | «cambia la distancia objetivo a veinte centímetros» | Verificar que la variante con unidad resuelva `CambiarParametroIntent` con `distanciaObjetivoCm` y valor `20`. | En la compilación final, Utterance Profiler seleccionó `CambiarParametroIntent` y mostró `valor:?`. La frase sin unidad (PAR-1) devolvió `valor:20`. |
 | INT-16 | «dime la distancia y la luz» con ambas mediciones, una sola y ninguna | Informa los valores medidos en centímetros y porcentaje e indica las lecturas ausentes. El Shadow conserva sus valores. | Pendiente en el simulador |
 | INT-17 | Pedir cuatro pistas seguidas y luego cambiar de desafío, de partida o de sesión | Secuencia 1 → 2 → 3 → 3. Cada contexto nuevo reinicia en 1. Se registra un evento `pista` por respuesta entregada. | Pendiente de conectar el catálogo y comprobar DynamoDB |
 
@@ -309,15 +787,50 @@ En la prueba inicial de recepción, Mateo registró `persistido = false`. En una
 
 Mateo informó que desplegó la Lambda P4 y probó RF4 con el Shadow y DynamoDB. Su rama `feat/lambda-p4` documenta **151 pruebas exitosas** en `3dd2319`. El código de la rama incluye el proveedor de pistas progresivas como dependencia opcional. Quedan pendientes conectar el catálogo de Lucía al proveedor de producción y verificar en el simulador los casos de RF4 y la persistencia de eventos de pistas.
 
+### 4.4 Pruebas automatizadas
+
+| Conjunto | Cómo se corre | Casos |
+|---|---|---|
+| Firmware, lógica pura (Unity, en la PC) | `pio test -e pruebas`, desde `firmware/` | 89: `EstadoShadow` 32, `ParametrosJuego` 18, `PartidaEnigmas` 20, `EventoJson`/`RelojUtc` 11, `ColaEventos` 8 |
+| Lambda de vigilancia (`unittest`) | `python -m unittest discover -s tests`, desde `lambda-vigilancia/` | 20 |
+
+Cubren, entre otros:
+- la partida completa con la secuencia de eventos del contrato;
+- el fallo y el reintento;
+- el modo manual;
+- la solicitud repetida;
+- los valores inválidos del `delta`;
+- el formato exacto de `tsObjeto`;
+- la cola llena y los eventos rechazados;
+- las alertas no repetidas.
+
+### 4.5 Requerimientos no funcionales a cargo de Adrián
+
+| Atributo | Valor declarado | Procedimiento | Resultado |
+|---|---|---|---|
+| Operación sin conexión | El juego sigue y el servo abre sin red. Los eventos se guardan (hasta 20) y llegan en orden al volver. | Cortar el WiFi en medio de una partida, 3 veces. Contar los eventos impresos por Serial ("Evento: …") y los ítems guardados en DynamoDB. | **Pendiente** |
+| Reconexión con `desired` pendiente | Los cambios hechos por voz sin red se aplican solos al reconectar. | Con la placa sin red, cambiar el modo y la dificultad por voz y reconectar. Comprobar el `reported`. | **Pendiente** |
+| Tiempo de respuesta de la regla de la Nube | ≤ 20 min (15 + 5). | Apagar la placa y medir desde la última lectura hasta el `tsGuardado` de la alerta, 3 veces. | **Pendiente** |
+| Tiempo de respuesta de la regla del Edge | **Pendiente**: se declara con la medición (se espera menos de 100 ms). | Con Santiago: la marca de `millis()` del último desafío contra la de "Cerradura: abierta a los … ms", 10 veces. | **Pendiente** |
+| Mensajes por día | Unos 1 440 reportes periódicos más unos 11 mensajes por partida. | Contar las publicaciones durante 10 min con el cliente de pruebas MQTT y extrapolar. | **Pendiente** |
+
 ## 5. Resultados
 
-El modelo de desarrollo incluye 14 intents propios y 94 frases. Se verificaron las 88 frases en la compilación del 23/11 y las seis de RF4, más cuatro frases de control, en la del 24/11. Se prepararon nueve pistas y el mockup RF15 con datos ilustrativos. Quedan pendientes la integración de las pistas y las pruebas funcionales y físicas. [Estado de Lucía](docs/planificacion/p4-04-lucia-skill-informe.md#estado-al-23112026)
+El modelo de desarrollo incluye 14 intents propios y las 114 frases de la compilación final del 24/11 seleccionaron el intent esperado. Se prepararon nueve pistas y el mockup RF15 con datos ilustrativos. Quedan pendientes la integración de las pistas y las pruebas funcionales y físicas. [Estado de Lucía](docs/planificacion/p4-04-lucia-skill-informe.md#estado-al-23112026)
 
 ### 5.1 Estimación preliminar de uso
 
 Con el escenario de Adrián de una caja, 20 partidas diarias sin fallos y un mes de 30 días, se estiman 1 440 reportes periódicos diarios y unos 11 mensajes adicionales por partida. Eso da aproximadamente **1 660 publicaciones diarias y 49 800 al mes** de la caja. Cada fallo de memoria aporta un evento adicional y cada pista solicitada agrega un evento de la skill.
 
-La regla de vigilancia cada 5 minutos implica **288 ejecuciones diarias y 8 640 mensuales**. Cada ejecución inicia una consulta por caja y puede leer páginas adicionales. Solo se escribe al crear una alerta nueva. Para cerrar el cálculo faltan los conteos de mensajes medidos, las invocaciones de la skill y del almacenamiento, las lecturas y escrituras de DynamoDB, y el contraste con la capa gratuita aplicable. [Supuestos de Adrián](docs/informe-p4-adrian.md)
+La regla de vigilancia cada 5 minutos implica **288 ejecuciones diarias y 8 640 mensuales**, independientemente de cuántas cajas se supervisen. Cada ejecución inicia una consulta por caja y puede leer páginas adicionales. Solo se escribe al crear una alerta nueva. [Supuestos de Adrián](docs/informe-p4-adrian.md)
+
+| Servicio | Escenario mensual para una caja | Comparación |
+|---|---|---|
+| AWS IoT Core | 49 800 publicaciones de la caja y 43 200 minutos si está conectada todo el mes. Con una regla y una acción por mensaje admitido, aproximadamente 49 800 ejecuciones y acciones. | Las publicaciones equivalen al 10 % de la referencia de 500 000 mensajes. La conexión y las reglas quedan por debajo de las referencias de 2 250 000 minutos y 250 000 reglas y acciones. El total facturable incluye las entregas de mensajes, las operaciones de Shadow y el uso de otras cajas. [Precios de AWS IoT Core](https://aws.amazon.com/iot-core/pricing/) |
+| AWS Lambda | Unas 49 800 invocaciones de almacenamiento, suponiendo que cada publicación pasa una de las reglas. La vigilancia suma 8 640. En conjunto, 58 440 invocaciones, más la skill, pistas y reintentos. | Son el 5,84 % de la referencia mensual de un millón de solicitudes. El límite de cómputo es 400 000 GB-s y requiere medir duración y memoria. [Precios de AWS Lambda](https://aws.amazon.com/lambda/pricing/) |
+| Amazon DynamoDB | Unas 49 800 escrituras de mensajes válidos más alertas, y al menos 8 640 consultas de vigilancia si se supervisa una caja. A eso se suman las vinculaciones, los reportes y la paginación. | En modo bajo demanda, los 25 RCU y 25 WCU de la capa gratuita se refieren a capacidad aprovisionada. Como referencia, 49 800 escrituras de hasta 1 KB representan unos USD 0,031 a la tarifa de USD 0,625 por millón de unidades de escritura. DynamoDB Standard publica una referencia de 25 GB gratuitos de almacenamiento. [Precios de DynamoDB](https://aws.amazon.com/dynamodb/pricing/) |
+
+Esta estimación refleja el escenario de una caja. Para confirmar el costo real, falta revisar el consumo agregado, las operaciones de Shadow, los ítems y las páginas leídas, y la elegibilidad de la cuenta. AWS publica un programa de créditos para clientes nuevos desde el 15/07/2025. [Programa AWS Free Tier](https://aws.amazon.com/free/)
 
 ## 6. Conclusiones
 

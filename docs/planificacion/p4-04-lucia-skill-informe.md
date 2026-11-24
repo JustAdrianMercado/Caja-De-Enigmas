@@ -103,19 +103,19 @@ Llenar al cerrar cada iteración, con lo que **de verdad** quedó hecho. Si un c
 
 ### Estado al 23/11/2026
 
-La rama local `feat/skill-p4` parte de `origin/main` en `ac371d5`, que incorpora los PR #9 (Mateo) y #10 (Adrián). Los entregables de Lucía siguen como cambios locales, pendientes de commit y PR.
+La revisión `b7f3dd1` de `main` incorpora el backend de Mateo (PR #11) y los entregables de Lucía (PR #12). Sobre esa base se preparó la ampliación de frases de sensores y progreso.
 
 | Iteración | Avance comprobado | Para cerrar |
 |---|---|---|
-| 0 · Skill e informe | Se localizó «Caja de Enigmas» en desarrollo y en Spanish (US). El [informe P4](../../INFORME_P4.md) incluye el caso de uso, los criterios de aceptación y las secciones de la consigna. | Confirmar en el simulador que el endpoint responde y publicar el informe mediante PR. |
-| 1 · Modelo y pistas | El [modelo es-US](../../config/alexa/modelo-interaccion.es-US.json) se guardó y compiló en Alexa. Incluye 8 intents nuevos, 13 propios en total y 88 frases. Se retiró `ConsultarTapaIntent`, se ajustaron seis frases y se obtuvo 88/88 intents correctos en la segunda prueba. El [catálogo](../../lambda/pistas.py) aporta 3 pistas por desafío. | Confirmar los IDs canónicos de slots en el JSON del simulador. Acordar con Mateo la selección de pistas y conectar `PISTAS_POR_DESAFIO` al parámetro `obtener_pista`, que sigue en `None` en el backend de la rama. |
-| 2 · Reportes y voz | [Mockup RF15](../mockups/README.md) con consultas documentadas. [Matriz de voz](../../INFORME_P4.md#41-reconocimiento-de-frases) con 88 resultados del evaluador, 15 casos de integración y dos secuencias de voz. | Probar con Mateo en `caja-enigmas-02`. Registrar la respuesta y, cuando corresponda, el Shadow o evento persistido. Revisar la variante con «centímetros», cuyo número no se resolvió en el evaluador. |
-| 3 · Prueba física y costo | El firmware 0.4.0 integra la partida y los eventos. Adrián aportó la estimación preliminar de tráfico y el [borrador técnico](../informe-p4-adrian.md). | Ejecutar la prueba de voz en `caja-enigmas-01`, la caja física, y guardar evidencias. Incorporar mediciones de Adrián y los conteos de Lambda y DynamoDB de Mateo. Contrastar con la capa gratuita aplicable. |
-| 4 · Entrega | El borrador de Lucía ya referencia los aportes técnicos incorporados a `main`. | Consolidar los resultados físicos y de nube, completar conclusiones y anexos, revisar enlaces y tramitar el PR. Meta interna del grupo: 24/11 a las 14:00. Límite de la consigna: 17:45 de La Paz. |
+| 0 · Skill e informe | «Caja de Enigmas» está configurada en desarrollo y en Spanish (US). El informe inicial ya está en `main`. | Confirmar la respuesta del endpoint en el simulador. |
+| 1 · Modelo y pistas | El [modelo es-US](../../config/alexa/modelo-interaccion.es-US.json) se compiló con 14 intents propios y 114 frases. El [catálogo](../../lambda/pistas.py) aporta 3 pistas por desafío y ya está en `main`. | Confirmar los IDs de slots en el JSON del simulador. Conectar el catálogo a `obtener_pista_progresiva` y desplegar la Lambda de Mateo. |
+| 2 · Reportes y voz | [Mockup RF15](../mockups/README.md) con consultas documentadas, [matriz de voz](../../INFORME_P4.md#41-reconocimiento-de-frases) y 17 casos de integración. | Adrián debe preparar el estado y el código de vinculación de `caja-enigmas-02`. Probar con Mateo desde Alexa y verificar los eventos de pista en DynamoDB. |
+| 3 · Prueba física y costo | El firmware 0.4.0 integra la partida y los eventos. La estimación compara IoT Core, Lambda y DynamoDB con las referencias de AWS. | Confirmar la carga de P4 en `caja-enigmas-01`, ejecutar la prueba física y guardar evidencias. Completar el costo con el consumo observado y la elegibilidad de la cuenta. |
+| 4 · Entrega | Las secciones de arquitectura, configuración, pruebas y costos de Adrián se integraron en el informe. | Añadir los resultados finales, revisar el PR del ajuste de voz y coordinar la entrega por el LMS. La consigna fija el límite del 24/11 a las 17:45, hora de La Paz. |
 
 **RF4.** El contrato §7 y el modelo P4 incorporan `ConsultarSensoresIntent`. El resultado con Alexa y el Shadow de la caja de pruebas se registra en INT-16.
 
-El reconocimiento por texto en Utterance Profiler ya está documentado. Siguen pendientes las evidencias del simulador con la Lambda, de persistencia de pistas en DynamoDB y de operación de extremo a extremo.
+El 24/11 se añadieron diez frases de sensores y diez de progreso. Se guardó y compiló el modelo en Alexa y se verificó que el JSON exportado coincidiera con el del repositorio. Las 114 frases obtuvieron el intent esperado en la versión final. Se guardaron siete capturas en `docs/evidencias/alexa-p4/`. Siguen pendientes las evidencias del simulador con la Lambda y de operación de extremo a extremo.
 
 #### Coordinación con Mateo
 
@@ -124,6 +124,7 @@ El 24/11 se verificó en Git la revisión `3dd2319` de la rama `feat/lambda-p4`.
 - **Pistas:** Mateo implementó la secuencia 1 → 2 → 3 → 3 con reinicio por desafío, partida o sesión. Su proveedor recibe `(desafio, nivel)`. El archivo `lambda/pistas.py` contiene `PISTAS_POR_DESAFIO[desafio][nivel - 1]`. Falta conectarlo y revisar en DynamoDB un evento por pista entregada.
 - **RF4:** Mateo implementó el manejador sin slots. Lucía añadió el intent y seis frases al modelo. El borrador compiló el 24/11 y las seis frases seleccionaron el intent esperado en Utterance Profiler. El manejador informa la medición disponible e identifica la ausente cuando recibe un reporte parcial.
 - **Informe:** pedir a Mateo las evidencias disponibles de CloudWatch y DynamoDB, las exportaciones pendientes y los conteos con su ventana de medición para cerrar los resultados y los costos.
+- **AWS y caja de pruebas:** Adrián informó que el rol desplegado ya permite publicar pistas. Queda exportar la política con ese permiso. También indicó que `caja-enigmas-02` carece del código de vinculación y ofreció preparar su estado de prueba. La caja física `caja-enigmas-01` sigue pendiente de confirmar con el firmware P4.
 
 ### Iteración 0 — vie 20
 - **Qué quedó funcionando:**

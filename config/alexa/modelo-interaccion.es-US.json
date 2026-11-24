@@ -135,7 +135,17 @@
             "dime mi progreso",
             "cuál es mi progreso",
             "cuál es mi desafío actual",
-            "consulta mi progreso"
+            "consulta mi progreso",
+            "en qué desafío voy",
+            "en qué desafío va mi caja",
+            "dime mi desafío actual",
+            "qué desafío está activo en mi caja",
+            "cómo voy en la partida",
+            "cómo va mi partida",
+            "muéstrame mi progreso",
+            "dime mi etapa actual",
+            "cuál es mi progreso actual",
+            "dime el progreso de mi caja"
           ]
         },
         {
@@ -226,7 +236,17 @@
             "dime la distancia medida",
             "dime cuánta luz mide la caja",
             "consulta las mediciones de la caja",
-            "dime las lecturas de distancia y luz"
+            "dime las lecturas de distancia y luz",
+            "cuánta luz tiene mi caja",
+            "qué distancia marca mi caja",
+            "cómo están los sensores de mi caja",
+            "cómo están los sensores",
+            "cuánta luz detecta mi caja",
+            "qué distancia mide mi caja",
+            "dime las mediciones de mi caja",
+            "dime qué marcan los sensores",
+            "cuánto mide el sensor de distancia",
+            "dime el porcentaje de luz de mi caja"
           ]
         }
       ],
