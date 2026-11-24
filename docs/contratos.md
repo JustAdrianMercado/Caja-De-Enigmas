@@ -245,13 +245,14 @@ FROM 'caja-enigmas/+/eventos'
 | `AbrirCerraduraIntent` | — | `desired.cerradura = "abierta"` (RF5). **Solo en modo `manual`**; en modo `juego` se rechaza (sección 9.1). |
 | `CerrarCerraduraIntent` | — | `desired.cerradura = "cerrada"` (RF5). **Solo en modo `manual`**; en modo `juego` se rechaza. |
 | `IniciarPartidaIntent` | — | Incrementa `desired.solicitudPartida`. En modo `manual` se rechaza. |
-| `PedirPistaIntent` | — | Lee `reported.desafioActual`, responde con una pista de `lambda/pistas.py` y publica un evento `pista`. Sin una partida en curso, lo explica. |
+| `PedirPistaIntent` | — | Lee `reported.desafioActual` e `idPartida`. Entrega las tres pistas de `lambda/pistas.py` en orden y luego repite la tercera. Reinicia la secuencia al cambiar la partida, el desafío o la sesión. Publica un evento `pista` por cada pista entregada. Sin una partida en curso, lo explica. |
 | `ConsultarProgresoIntent` | — | Responde con `estadoPartida` y `desafioActual`. |
 | `CambiarModoIntent` | `modo` (`TipoModo`) | `desired.modo`. Al pasar a `juego`, además `desired.cerradura = null` (sección 2). |
 | `ConsultarModoIntent` | — | Lee `reported.modo`. |
 | `CambiarDificultadIntent` | `dificultad` (`TipoDificultad`) | `desired.dificultad`. |
 | `CambiarParametroIntent` | `parametro` (`TipoParametro`), `valor` (`AMAZON.NUMBER`) | Valida el rango de la sección 2. Si es válido, escribe en `desired`; si no, explica el rango y no escribe nada. |
 | `ConsultarParametrosIntent` | — | La dificultad, `longitudSecuencia`, `toleranciaCm`, `distanciaObjetivoCm` y `umbralLuzPorcentaje` reportados. |
+| `ConsultarSensoresIntent` | — | Lee las mediciones `reported.distanciaCm` y `reported.luzPorcentaje` de la caja vinculada. Informa cada lectura válida y avisa si alguna o ambas faltan o son inválidas. No escribe en el Shadow. |
 | `AMAZON.HelpIntent`, `CancelIntent`, `StopIntent`, `FallbackIntent`, `NavigateHomeIntent` | — | Intents integrados. |
 
 `ConsultarTapaIntent` **se quita**.
