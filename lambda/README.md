@@ -134,11 +134,23 @@ corrupto y fallos de lectura, asignación, proveedor y publicación. También
 verifican el payload real de `PublicadorEventos` con cliente simulado,
 conservación del contador entre otros intents y otra instancia de la skill.
 
-Pendiente con Lucía: recibir los tres textos ordenados de cada desafío,
-acordar su estructura real y conectar un adaptador al proveedor progresivo
-en la composición. Después, revisar el modelo y comprobar sesiones y frases
-en el simulador. No se modificaron sus archivos, firmware, almacenamiento o
-vigilancia; no se crearon recursos, despliegues, commits ni PR en esta tarea.
+El arranque de producción conecta `obtener_pista_progresiva(desafio, nivel)`
+con `PISTAS_POR_DESAFIO[desafio][nivel - 1]` de `pistas.py`. El catálogo de
+Lucía contiene exactamente tres textos ordenados para memoria, distancia y
+luz; se conservan sin cambios. La inyección opcional de `crear_skill` sigue
+disponible para pruebas y consumidores anteriores.
+
+`test_catalogo_pistas.py` ejecuta el arranque de producción con clientes AWS
+simulados y servicios reales. Verifica los nueve textos completos, la
+repetición de la tercera pista, un evento por entrega, los reinicios y las
+consultas intercaladas de sensores, progreso y modo sin alterar el contador.
+La suite completa de `lambda/tests` pasa con **155 pruebas**. También pasan
+las suites de almacenamiento (**27**) y vigilancia (**20**).
+
+Pendiente de validación externa: comprobar sesiones y frases en el simulador
+de Alexa y la recepción de eventos en el histórico cuando el grupo despliegue.
+No se modificaron el modelo de Alexa ni el firmware; no se realizaron
+despliegues, commits, push ni PR.
 
 ## Iteración 2: backend local y dependencias pendientes
 
