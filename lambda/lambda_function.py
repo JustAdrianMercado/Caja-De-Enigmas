@@ -5,6 +5,7 @@ import os
 import boto3
 
 from ask_sdk_core.skill_builder import SkillBuilder
+from pistas import PISTAS_POR_DESAFIO
 
 from manejadores.lanzamiento import LaunchRequestHandler
 from servicios.repositorio_vinculaciones import (
@@ -39,6 +40,11 @@ from manejadores.sesion import (
     NavigateHomeIntentHandler,
     SessionEndedRequestHandler,
 )
+
+
+def obtener_pista_progresiva(desafio, nivel):
+    """Adapta los niveles del manejador al catálogo ordenado de Lucía."""
+    return PISTAS_POR_DESAFIO[desafio][nivel - 1]
 
 
 def crear_skill(repositorio, servicio_registro, servicio_shadow,
@@ -140,9 +146,7 @@ sb = crear_skill(
     servicio_shadow,
     os.environ.get("PREFIJO_THING", "caja-enigmas-"),
     publicador_eventos=publicador_eventos,
-    # Integrar el contenido de Lucía cuando exista pistas.py y se acuerde
-    # su estructura. No asumir nombres de variables ni inventar pistas.
-    obtener_pista=None,
+    obtener_pista_progresiva=obtener_pista_progresiva,
 )
 # 6. Punto de entrada de AWS Lambda
 lambda_handler = sb.lambda_handler()

@@ -1,4 +1,4 @@
-"""Pistas con contenido externo pendiente de integración con Lucía."""
+"""Entrega pistas del proveedor inyectado y conserva el progreso en sesión."""
 
 from xml.sax.saxutils import escape
 
