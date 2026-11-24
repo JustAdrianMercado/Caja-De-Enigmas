@@ -21,7 +21,7 @@ No necesitás la caja para trabajar. El simulador de la consola de Alexa resuelv
 
 1. Los nombres de los intents, los slots y los tipos propios (con sus IDs) ya están aprobados en [contratos.md, sección 7](../contratos.md). Los patrones de acceso de tus mockups están en la sección 5.2. Podés agregar sinónimos sin cambiar el contrato; los IDs no se cambian.
 2. En la consola de Alexa, crear los intents nuevos con 2 o 3 frases cada uno y **quitar `ConsultarTapaIntent`**.
-3. **`INFORME_P4.md`** con las secciones del §4.2 de la consigna y el responsable de cada una, según "Secciones del informe" más abajo. `INFORME.md` (P3) no se toca.
+3. **`INFORME_P4.md`** con las secciones del §4.2 de la consigna y el responsable de cada una, según "Secciones del informe" más abajo.
 
 **Listo cuando:** los intents nuevos existen en la consola y el esqueleto del informe está en `main`.
 
@@ -109,7 +109,7 @@ La revisión `b7f3dd1` de `main` incorpora el backend de Mateo (PR #11) y los en
 |---|---|---|
 | 0 · Skill e informe | «Caja de Enigmas» está configurada en desarrollo y en Spanish (US). El informe inicial ya está en `main`. | Confirmar la respuesta del endpoint en el simulador. |
 | 1 · Modelo y pistas | El [modelo es-US](../../config/alexa/modelo-interaccion.es-US.json) se compiló con 14 intents propios y 114 frases. El [catálogo](../../lambda/pistas.py) aporta 3 pistas por desafío y ya está en `main`. | Confirmar los IDs de slots en el JSON del simulador. Conectar el catálogo a `obtener_pista_progresiva` y desplegar la Lambda de Mateo. |
-| 2 · Reportes y voz | [Mockup RF15](../mockups/README.md) con consultas documentadas, [matriz de voz](../../INFORME_P4.md#41-reconocimiento-de-frases) y 17 casos de integración. | Adrián debe preparar el estado y el código de vinculación de `caja-enigmas-02`. Probar con Mateo desde Alexa y verificar los eventos de pista en DynamoDB. |
+| 2 · Reportes y voz | [Mockup RF15](../mockups/README.md) con consultas documentadas, [matriz de voz](../../INFORME_P4.md#83-matriz-de-frases-de-la-skill) y 17 casos de integración. | Adrián debe preparar el estado y el código de vinculación de `caja-enigmas-02`. Probar con Mateo desde Alexa y verificar los eventos de pista en DynamoDB. |
 | 3 · Prueba física y costo | El firmware 0.4.0 integra la partida y los eventos. La estimación compara IoT Core, Lambda y DynamoDB con las referencias de AWS. | Confirmar la carga de P4 en `caja-enigmas-01`, ejecutar la prueba física y guardar evidencias. Completar el costo con el consumo observado y la elegibilidad de la cuenta. |
 | 4 · Entrega | Las secciones de arquitectura, configuración, pruebas y costos de Adrián se integraron en el informe. | Añadir los resultados finales, revisar el PR del ajuste de voz y coordinar la entrega por el LMS. La consigna fija el límite del 24/11 a las 17:45, hora de La Paz. |
 
@@ -119,7 +119,7 @@ El 24/11 se añadieron diez frases de sensores y diez de progreso. Se guardó y 
 
 #### Coordinación con Mateo
 
-El 24/11 se verificó en Git la revisión `3dd2319` de la rama `feat/lambda-p4`. Mateo informó el despliegue de P4 en AWS, pruebas de RF4 con el Shadow y DynamoDB y 151 pruebas locales aprobadas. El catálogo de Lucía está listo para la integración. Queda confirmar la conexión en producción y preparar los [tres estados de prueba](../../INFORME_P4.md#estados-de-prueba-para-caja-enigmas-02).
+El 24/11 se verificó en Git la revisión `3dd2319` de la rama `feat/lambda-p4`. Mateo informó el despliegue de P4 en AWS, pruebas de RF4 con el Shadow y DynamoDB y 151 pruebas locales aprobadas. El catálogo de Lucía está listo para la integración. Queda confirmar la conexión en producción y preparar los tres estados de prueba para `caja-enigmas-02`.
 
 - **Pistas:** Mateo implementó la secuencia 1 → 2 → 3 → 3 con reinicio por desafío, partida o sesión. Su proveedor recibe `(desafio, nivel)`. El archivo `lambda/pistas.py` contiene `PISTAS_POR_DESAFIO[desafio][nivel - 1]`. Falta conectarlo y revisar en DynamoDB un evento por pista entregada.
 - **RF4:** Mateo implementó el manejador sin slots. Lucía añadió el intent y seis frases al modelo. El borrador compiló el 24/11 y las seis frases seleccionaron el intent esperado en Utterance Profiler. El manejador informa la medición disponible e identifica la ausente cuando recibe un reporte parcial.

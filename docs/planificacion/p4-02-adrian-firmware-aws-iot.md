@@ -183,9 +183,9 @@ Llenar al cerrar cada iteración, con lo que **de verdad** quedó hecho. Si un c
     - todos los eventos pasan por la cola;
     - comando Serial `iniciar`.
   - **Lambda `caja-enigmas-vigilancia`**, con tests, el script de empaquetado y un README con los pasos de consola. La política del rol y la regla de EventBridge están en `config/aws/`.
-  - **Borrador de mis secciones del informe** en [docs/informe-p4-adrian.md](../informe-p4-adrian.md), para que Lucía las integre a `INFORME_P4.md`.
+  - **Borrador de mis secciones del informe**, integrado en el [informe de la P4](../../INFORME_P4.md).
 - **Archivos, commits y PR:**
-  - nuevos: `EventoJson.*`, `RelojUtc.*`, `ColaEventos.*`, `firmware/test/test_evento_json/`, `firmware/test/test_cola_eventos/`, `lambda-vigilancia/**`, `config/aws/politica-rol-vigilancia.json`, `config/aws/regla-vigilancia.json` y `docs/informe-p4-adrian.md`;
+  - nuevos: `EventoJson.*`, `RelojUtc.*`, `ColaEventos.*`, `firmware/test/test_evento_json/`, `firmware/test/test_cola_eventos/`, `lambda-vigilancia/**`, `config/aws/politica-rol-vigilancia.json` y `config/aws/regla-vigilancia.json`;
   - cambiados: `main.cpp`, `ConexionAwsIot.*`, `firmware/platformio.ini` y `docs/contratos.md` (secciones 3.3, 6 y 9.3);
   - rama `feat/firmware-aws-p4-it2`, PR #10.
 - **Decisiones y por qué:**

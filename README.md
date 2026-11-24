@@ -1,4 +1,4 @@
-# Caja de los Enigmas — SIS-234, Prácticas 3 y 4
+# Caja de los Enigmas — SIS-234, Práctica 4
 
 Objeto inteligente con ESP32 integrado con **Alexa** mediante **AWS IoT Core** (Device Shadow), **AWS Lambda** (Python) y **DynamoDB**. Es el primer módulo del proyecto final *Escape Room IoT: La Caja de los Enigmas*.
 
@@ -6,7 +6,7 @@ Objeto inteligente con ESP32 integrado con **Alexa** mediante **AWS IoT Core** (
 
 ## Práctica 4 (entrega del 24/11/2026)
 
-**Informe técnico de la P4: [INFORME_P4.md](INFORME_P4.md).** El informe de la P3 sigue en [INFORME.md](INFORME.md), sin cambios.
+**Informe técnico de la P4: [INFORME_P4.md](INFORME_P4.md).**
 
 La P4 convierte la caja en un juego de tres desafíos (memoria, distancia y luz) que se resuelve en el ESP32 y abre el servo. Alexa hace de *game master*: inicia partidas, da pistas y cambia el modo y los parámetros. Dos reglas de AWS IoT guardan las lecturas y los eventos en DynamoDB, y una Lambda programada detecta las cajas que dejan de reportar.
 
@@ -28,20 +28,6 @@ La P4 convierte la caja en un juego de tres desafíos (memoria, distancia y luz)
 | Anexos: diagramas, fotos y evidencias | [docs/diagramas/](docs/diagramas/), [docs/evidencias/p4/](docs/evidencias/p4/) y la [hoja de pruebas en PDF](docs/evidencias/p4/pruebas/Hoja_Pruebas_P4_Caja_Enigmas.pdf) |
 | Consigna | [docs/consigna/Práctica_4.md](docs/consigna/Práctica_4.md) |
 
-## Práctica 3
-
-El prototipo de la P3 es un montaje de mesa: un SG90 representa la cerradura y un reed con imán representa la apertura de la tapa, sin pestillo acoplado. La P4 quitó el reed.
-
-```mermaid
-flowchart LR
-    U(["Usuario"]) -- voz --> AX["Skill de Alexa<br/>caja de enigmas"]
-    AX -- "intent + userId" --> L["AWS Lambda<br/>caja-enigmas-skill"]
-    L -- "vinculación" --> DB[("DynamoDB<br/>CajaEnigmasVinculaciones")]
-    L -- "Get/UpdateThingShadow" --> SH[("Device Shadow<br/>caja-enigmas-NN")]
-    ESP["ESP32<br/>servo SG90 + reed switch"] -- "reported" --> SH
-    SH -- "delta" --> ESP
-```
-
 ## Estructura
 
 ```text
@@ -52,16 +38,15 @@ lambda-vigilancia/       Detección de cajas sin reportar (P4)
 config/alexa/            Modelo de interacción exportado
 config/aws/              Política de IoT, reglas, roles IAM, regla programada y tablas
 docs/                    Contratos, planificación, consigna, diagramas, mockups y evidencias
-INFORME.md               Informe técnico de la P3
 INFORME_P4.md            Informe técnico de la P4
 ```
 
-- [Informe técnico de la P3](INFORME.md) e [informe técnico de la P4](INFORME_P4.md).
+- [Informe técnico de la P4](INFORME_P4.md).
 - [Índice de documentación](docs/README.md).
 - [Backend de Alexa](lambda/README.md).
 - [Contratos entre componentes](docs/contratos.md): Shadow, temas MQTT, vinculación, tabla, intents y pines.
-- [Planificación por integrante](docs/planificacion/00-resumen.md).
-- [Consigna](docs/consigna/Práctica_3.md).
+- [Planificación por integrante](docs/planificacion/p4-00-resumen.md).
+- [Consigna](docs/consigna/Práctica_4.md).
 
 ## Firmware
 

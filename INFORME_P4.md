@@ -2,7 +2,7 @@
 
 **SIS-234 · Ingeniería de Sistemas.** Integrantes: Santiago Torres, Adrián Mercado, Mateo Rojas y Lucía Escobar. Entrega: 24/11/2026.
 
-Esta práctica amplía la [Práctica 3](INFORME.md), cuyo informe se conserva sin cambios. La consigna está en [docs/consigna/Práctica_4.md](docs/consigna/Práctica_4.md) y el contrato entre componentes en [docs/contratos.md](docs/contratos.md).
+Esta práctica amplía el prototipo de la Práctica 3. La consigna está en [docs/consigna/Práctica_4.md](docs/consigna/Práctica_4.md) y el contrato entre componentes en [docs/contratos.md](docs/contratos.md).
 
 **Contenido:**
 1. [Caso de uso y requerimientos](#1-caso-de-uso-y-requerimientos)
@@ -1011,7 +1011,6 @@ docs/                     Contratos, diagramas, mockups, guías y evidencias
 - **`EventoJson` escribe solo los campos de cada tipo.** La Lambda de almacenamiento valida todos los campos que llegan, y un campo de más con un valor fuera de rango (por ejemplo, `intentos: 0`) haría descartar el evento entero.
 
 - **Configuración sin secretos:** el endpoint, el certificado, la clave privada y el WiFi viven en `firmware/include/ConfiguracionAws.h` y `ConfiguracionWifi.h`, que están en `.gitignore`. El repositorio solo tiene las plantillas [ConfiguracionAws.ejemplo.h](firmware/include/ConfiguracionAws.ejemplo.h) y [ConfiguracionWifi.ejemplo.h](firmware/include/ConfiguracionWifi.ejemplo.h).
-- **Código del reed de la P3:** `SensorTapa`, `PinReedTapa` y `firmware/pruebas/reed/` se conservan porque el [informe de la P3](INFORME.md) los cita. El firmware de la P4 no los usa: `main.cpp` no crea ningún `SensorTapa`.
 - **Comandos de banco:** `abrir` y `cerrar` de la consola serial mueven el servo en cualquier modo y no generan eventos. Sirven solo para probar el montaje con la placa conectada a la PC; en la sesión se usaron una vez, a las 13:05, antes de las pruebas. En la operación normal no hay consola, y la convivencia de la sección 2.7 se mantiene.
 - **Firmware 0.4.1:** agrega a la consola serial el comando `sensores`, que imprime cada segundo la distancia, la luz y el estado de los pulsadores. Se usó para calibrar (sección 4.5) y para encontrar el error de cableado de los pulsadores (sección 4.6).
 
@@ -1590,7 +1589,6 @@ El prefijo de cada caso indica el intent. En las pruebas de control de la cerrad
 | Pruebas de voz con el simulador | [pruebas-voz.log](docs/evidencias/p4/pruebas/pruebas-voz.log) |
 | Ítems de DynamoDB del 24/11 y muestra de cada tipo | [historico-caja-enigmas-01-24-11.json](docs/evidencias/p4/datos/historico-caja-enigmas-01-24-11.json), [muestra-historico.json](docs/evidencias/p4/datos/muestra-historico.json) |
 | Capturas de Utterance Profiler | [docs/evidencias/alexa-p4/](docs/evidencias/alexa-p4/) |
-| Capturas de Lambda, DynamoDB, Shadow y CloudWatch de la **P3** (09 y 10/11), anteriores al Shadow v2 | [docs/evidencias/mateo-lambda/para-informe/](docs/evidencias/mateo-lambda/para-informe/) |
 | Fotos del montaje | [docs/evidencias/p4/montaje/](docs/evidencias/p4/montaje/) |
 
 ### 8.5 Documentos de apoyo
@@ -1598,5 +1596,4 @@ El prefijo de cada caso indica el intent. En las pruebas de control de la cerrad
 - [Contrato entre componentes v2](docs/contratos.md)
 - [Guía de montaje](docs/GUIA_MONTAJE.md#montaje-de-la-práctica-4) y [diagramas de circuito](docs/diagramas/)
 - [Planificación de la P4](docs/planificacion/p4-00-resumen.md)
-- [Backend de la Lambda: auditoría y empaquetado](docs/backend-lambda.md)
-- [Guía para la defensa](docs/GUIA_DEFENSA.md)
+- [Documentación del backend de la skill](lambda/README.md) y [verificación del paquete local P4](lambda/caja-enigmas-skill-p4-20261123-verificacion.md).

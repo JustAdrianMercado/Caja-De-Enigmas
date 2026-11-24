@@ -215,7 +215,5 @@ Desde la raíz, con dependencias instaladas:
 python -m unittest discover -s lambda/tests -v
 ```
 
-Diseño y resultados: [INFORME.md](../INFORME.md).
-Auditoría, paquete y receta de mantenimiento:
-[backend-lambda.md](../docs/backend-lambda.md).
-Preparación de la defensa: [GUIA_DEFENSA.md](../docs/GUIA_DEFENSA.md).
+Diseño y resultados: [INFORME_P4.md](../INFORME_P4.md).
+Verificación del paquete local: [registro del 23/11/2026](caja-enigmas-skill-p4-20261123-verificacion.md).

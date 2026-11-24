@@ -6,7 +6,7 @@ El [modelo de interacción](modelo-interaccion.es-US.json) usa **Spanish (US), e
 
 1. Abrir el borrador de desarrollo de la skill en la [consola de Alexa](https://developer.amazon.com/alexa/console/ask) y seleccionar **Spanish (US)**.
 2. En **Build → JSON Editor**, importar el JSON, guardar y ejecutar **Build Model**. Si el modelo cambia en la consola, exportar la versión que se probó.
-3. En **Evaluate Model → Utterance Profiler**, ejecutar la matriz del [informe de la Práctica 4](../../INFORME_P4.md#41-reconocimiento-de-frases) y comprobar el intent, los slots y los IDs canónicos. Este paso funciona con el modelo compilado y no llama al endpoint. [Guía de Amazon](https://developer.amazon.com/en-US/docs/alexa/custom-skills/test-utterances-and-improve-your-interaction-model.html)
+3. En **Evaluate Model → Utterance Profiler**, ejecutar la matriz del [informe de la Práctica 4](../../INFORME_P4.md#83-matriz-de-frases-de-la-skill) y comprobar el intent, los slots y los IDs canónicos. Este paso funciona con el modelo compilado y no llama al endpoint. [Guía de Amazon](https://developer.amazon.com/en-US/docs/alexa/custom-skills/test-utterances-and-improve-your-interaction-model.html)
 4. Coordinar con Mateo el endpoint de desarrollo y el Skill ID autorizado en el disparador de la Lambda. En **Test**, activar **Development**, abrir «caja de enigmas» y ejecutar las pruebas de integración con `caja-enigmas-02`. [Guía de Amazon](https://developer.amazon.com/en-US/docs/alexa/devconsole/test-your-skill.html)
 
 ## Integración con Lambda

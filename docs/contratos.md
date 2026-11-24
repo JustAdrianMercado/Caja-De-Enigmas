@@ -3,7 +3,7 @@
 Este documento fija los nombres, formatos y reglas que comparten el firmware, las Lambdas y la skill, para que cada integrante trabaje en paralelo. **Si alguien necesita cambiar algo de aquí, lo avisa en el grupo antes de cambiar su código** y actualiza este archivo en el mismo PR.
 
 **Versión 2, aprobada por el grupo el 20/11/2026** para la Práctica 4 ([planificación](planificacion/p4-00-resumen.md)).
-- La versión 1 (Práctica 3) está en el historial de git (commit `176abf6`) y la describe [INFORME.md](../INFORME.md).
+- La versión 1 (Práctica 3) y su informe están en el historial de Git (commit `176abf6`).
 - El código y la configuración de AWS se adaptan a esta versión durante las iteraciones de la P4. Hasta que cada PR se integre, `main` puede seguir funcionando con la v1.
 - La numeración de las secciones 1 a 8 es la de la v1, porque el código la cita (por ejemplo, "contratos.md, sección 2").
 

@@ -4,7 +4,7 @@
 - en `firmware/include|src/`: `Pulsador.*`, `IndicadorLeds.*`, `SensorDistancia.*`, `SensorLuz.*`, `DesafioMemoria.*`, `DesafioDistancia.*`, `DesafioLuz.*`, `CerraduraServo.*` (se conserva) y `SensorTapa.*` (para borrarlo);
 - `firmware/include/ConfiguracionHardware.h`;
 - `firmware/pruebas/**`;
-- `docs/diagramas/circuito.*`, `docs/GUIA_MONTAJE.md` y `docs/PRUEBAS_FISICAS.md`.
+- `docs/diagramas/`, `docs/GUIA_MONTAJE.md` y las evidencias de montaje y pruebas en `docs/evidencias/p4/`.
 
 Ver los acuerdos en [p4-00-resumen.md](p4-00-resumen.md). Al cerrar cada iteración, llenás tu [registro](#registro-de-lo-aplicado) al final de este archivo.
 
@@ -75,7 +75,7 @@ Cada desafío implementa `Desafio` (`iniciar(parametros)`, `actualizar()`, `dete
 | Tiempo de respuesta del Edge | Desde que se cumple la condición del último desafío hasta que el servo se mueve, 10 veces. Con Adrián, usando las marcas de `millis()` por Serial. |
 | Estabilidad | ≥ 10 min de partidas seguidas sin reinicios, con el servo y el HC-SR04 activos. |
 
-Además: fotos del montaje en `docs/evidencias/`, `docs/diagramas/circuito.svg` actualizado y `GUIA_MONTAJE.md` sin el reed.
+Además: fotos del montaje en `docs/evidencias/p4/montaje/`, `docs/diagramas/circuito-general-p4.svg` y la `GUIA_MONTAJE.md` de la P4.
 
 ## Iteración 4 — mar 24: informe
 

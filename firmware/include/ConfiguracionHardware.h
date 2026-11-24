@@ -6,8 +6,6 @@
 // No contiene secretos: se versiona. Al calibrar el montaje real, cambiar solo este archivo.
 
 constexpr uint8_t PinServoCerradura = 18;  // Senal del SG90; se alimenta con el VIN de 5 V del USB.
-// Solo para el diagnostico de la P3 (firmware/pruebas/reed). El firmware de la P4 no usa el reed.
-constexpr uint8_t PinReedTapa = 4;         // Reed a GND con INPUT_PULLUP: LOW = tapa cerrada.
 
 constexpr uint8_t PinLedRojo = 25;
 constexpr uint8_t PinLedAmarillo = 26;

@@ -9,7 +9,7 @@ Este ZIP no representa una integración completa de P4.
 
 ## Procedencia y contenido
 
-Se revisaron README, requirements y la receta de `docs/backend-lambda.md`.
+Se revisaron el README, los requirements y la receta de empaquetado anterior, conservada en el historial de Git.
 El intento de instalación con pip para CPython 3.12/manylinux2014_x86_64
 falló por DNS. Como alternativa se reutilizaron exclusivamente dependencias
 del ZIP anterior, comprobando que sus metadatos coinciden con las 14

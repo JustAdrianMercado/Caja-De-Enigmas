@@ -1,11 +1,11 @@
 # Instrucciones para agentes de IA (Codex, Claude Code, etc.)
 
-Repositorio de la Práctica 3 de SIS-234: **Caja de los Enigmas**, un objeto inteligente con ESP32 integrado con Alexa mediante AWS IoT Core (Device Shadow), AWS Lambda (Python) y DynamoDB.
+Repositorio de la Práctica 4 de SIS-234: **Caja de los Enigmas**, un objeto inteligente con ESP32 integrado con Alexa mediante AWS IoT Core (Device Shadow), AWS Lambda (Python) y DynamoDB.
 
 ## Reglas del proyecto (tienen prioridad sobre las reglas de AWS de abajo)
 
 - Antes de cambiar el firmware, la Lambda o la skill, leer [docs/contratos.md](docs/contratos.md): nombres del Shadow, temas MQTT, tabla, intents y pines. Si un cambio afecta un contrato, se actualiza ese archivo en el mismo PR.
-- Plan y reparto de tareas: [docs/planificacion/](docs/planificacion/00-resumen.md).
+- Plan y reparto de tareas: [planificación de la Práctica 4](docs/planificacion/p4-00-resumen.md).
 - Región **us-east-1** para todo; perfil de AWS CLI del grupo: `caja-enigmas` (el usuario IAM de cada integrante).
 - Los recursos de AWS se configuran desde la consola, porque así lo documenta el informe, y sus definiciones se exportan a `config/`. No migrar a CDK ni a CloudFormation salvo que el grupo lo pida.
 - **Nunca** versionar certificados, la clave privada del Thing, credenciales WiFi ni access keys de AWS. Viven en `firmware/include/Configuracion*.h` (sin `.ejemplo`) o en `certificados-privados/`, que están en `.gitignore`.

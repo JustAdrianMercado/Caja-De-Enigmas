@@ -1,14 +1,9 @@
 # Diagnósticos del hardware y la partida
 
-Programas de diagnóstico separados del firmware integrado. El equipo confirmó
-el funcionamiento manual de servo y reed en el prototipo de mesa; no se atribuye
-a estos programas un ensayo concreto sin identificar el firmware utilizado.
-Ver los resultados y fotografías en [INFORME.md](../../INFORME.md).
-
-Este proyecto tiene su propio `platformio.ini`. El entorno `servo` compila solo
-`servo/main.cpp`; `reed` compila `reed/main.cpp` y el `SensorTapa.cpp` original.
-Cada entorno incluye un único `setup()` y `loop()`. El proyecto principal sigue
-usando `firmware/src` y su configuración no se modifica.
+Cada entorno de diagnóstico se compila por separado y usa sus propios
+`setup()` y `loop()`. El entorno `servo` compila solo `servo/main.cpp`.
+Para ver el montaje y los resultados de P4, consultar la
+[guía de montaje](../../docs/GUIA_MONTAJE.md) y el [informe](../../INFORME_P4.md).
 
 ## Preparación para un diagnóstico aislado
 
@@ -20,15 +15,11 @@ usando `firmware/src` y su configuración no se modifica.
   Esta guía no presupone que haya un multímetro disponible.
 - Hacer la primera prueba del servo sin carga y sin el brazo conectado a la
   cerradura. Mantener el mecanismo separado durante la exploración inicial.
-- Conectar el reed de dos contactos entre GPIO4 y GND: la clase activa
-  `INPUT_PULLUP`. Si se utiliza un módulo con electrónica adicional, revisar su
-  conexión antes de aplicar esta guía.
 
 ## Compilar desde la raíz del repositorio
 
 ```powershell
 pio run -d firmware/pruebas -e servo
-pio run -d firmware/pruebas -e reed
 pio run -d firmware/pruebas -e distancia -e luz
 pio run -d firmware -e caja
 ```
@@ -49,13 +40,6 @@ especificar el del ESP32 mediante `--upload-port` y `--port`, respectivamente.
 ```powershell
 pio run -d firmware/pruebas -e servo -t upload
 pio device monitor -d firmware/pruebas -e servo
-```
-
-Para el reed:
-
-```powershell
-pio run -d firmware/pruebas -e reed -t upload
-pio device monitor -d firmware/pruebas -e reed
 ```
 
 El monitor usa 115200 baudios y envía la línea al pulsar Enter. Cargar un
@@ -93,37 +77,14 @@ revisar después la geometría del pestillo y comprobar que el cierre pueda
 sostenerse sin depender del servo energizado. Si hace falta explorar fuera de
 la ventana inicial, revisar antes el servo concreto y su recorrido admisible.
 
-## Reed: contacto, polaridad y antirrebote
-
-El diagnóstico reutiliza `SensorTapa` sin duplicar su antirrebote de 50 ms.
-Muestra la lectura inicial, cada transición eléctrica observada, cada cambio
-confirmado y un resumen cada segundo. Las líneas incluyen tiempo en milisegundos.
-
-- `LOW`: contacto eléctrico cerrado hacia GND.
-- `HIGH`: contacto eléctrico abierto, elevado por `INPUT_PULLUP`.
-- La interpretación de tapa es **provisional**: LOW = cerrada, HIGH = abierta.
-  La lectura eléctrica instantánea puede diferir del estado confirmado durante
-  el antirrebote.
-
-Acercar y alejar el imán y anotar qué nivel aparece en cada caso. Compararlo con
-la posición real prevista de la tapa para confirmar o corregir la convención
-con el grupo. La referencia inicial no debe generar un evento de cambio.
-Observar que los cambios confirmados solo aparezcan tras 50 ms sin variaciones
-detectadas. Serial muestra las transiciones muestreadas, no garantiza capturar
-todos los rebotes eléctricos; su impresión también consume tiempo.
-
-El equipo confirmó LOW con imán cerca y HIGH con imán lejos. No registró
-distancias ni mediciones instrumentales de antirrebote; el resumen Serial
-permite observar el comportamiento muestreado, con las limitaciones descritas.
-
 ## P4: diagnósticos de distancia y luz
 
 Los entornos `distancia` y `luz` funcionan por separado y muestran datos por
 Serial a 115200 baudios.
 
 - **Distancia.** Alimentar el HC-SR04 a 5 V con GND común. Conectar TRIG a GPIO23
-  y ECHO a GPIO19 mediante el divisor, con 1 kΩ entre ECHO y GPIO19 y 2 kΩ entre
-  GPIO19 y GND. Comparar las lecturas con una regla a 10, 20 y 30 cm. Comprobar
+  y ECHO a GPIO19 mediante el [divisor del montaje P4](../../docs/diagramas/circuito-ultrasonico.svg).
+  Comparar las lecturas con una regla a 10, 20 y 30 cm. Comprobar
   también los avisos de falta de eco y de distancia fuera de 2–400 cm.
 - **Luz.** Conectar el punto medio del divisor de LDR y 10 kΩ a GPIO34. El
   diagnóstico muestra el promedio de ocho lecturas ADC sin convertir a voltios,

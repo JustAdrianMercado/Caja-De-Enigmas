@@ -16,7 +16,7 @@ La Práctica 4 ([consigna](../consigna/Práctica_4.md)) amplía la caja de la Pr
 | Mateo Rojas | Lambda de almacenamiento, histórico de DynamoDB y backend de la skill | [p4-03-mateo-lambda.md](p4-03-mateo-lambda.md) |
 | Lucía Escobar | Skill de Alexa, mockups de reportes, pruebas de voz y coordinación del informe | [p4-04-lucia-skill-informe.md](p4-04-lucia-skill-informe.md) |
 
-Cada uno sigue en el área que tuvo en la Práctica 3 ([planificación de la P3](00-resumen.md)), ampliada con las piezas nuevas que le corresponden.
+Cada uno sigue en el área que tuvo en la Práctica 3, ampliada con las piezas nuevas que le corresponden.
 
 ## Qué cambia respecto a la Práctica 3
 
@@ -100,7 +100,7 @@ Son las mismas de la Práctica 3 ([AGENTS.md](../../AGENTS.md)):
 - **Nunca subir secretos.**
 - Código limpio y en español, según las reglas de `AGENTS.md`.
 - Si alguien necesita cambiar el contrato, lo avisa en el grupo **antes** de cambiar su código, y actualiza `docs/contratos.md` en el mismo PR.
-- El informe de la P4 va en **`INFORME_P4.md`**. `INFORME.md` (P3) no se toca.
+- El informe de la P4 va en **`INFORME_P4.md`**.
 - **Al cerrar cada iteración, cada uno llena su registro** (sección siguiente) y lo sube en el mismo PR.
 
 ## Registro de lo aplicado en cada iteración
